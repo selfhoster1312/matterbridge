@@ -346,7 +346,7 @@ func (b *Btelegram) handleDownloadAvatar(userid int64, channel string) {
 			b.Log.Errorf("download %s failed %#v", url, err)
 			return
 		}
-		helper.HandleDownloadData(b.Log, &rmsg, name, rmsg.Text, "", data, b.General)
+		helper.HandleDownloadData(b.Log, &rmsg, name, rmsg.Text, url, data, b.General)
 		b.Remote <- rmsg
 	}
 }
@@ -440,7 +440,7 @@ func (b *Btelegram) handleDownload(rmsg *config.Message, message *tgbotapi.Messa
 		name = strings.Replace(name, ".oga", ".ogg", 1)
 	}
 
-	helper.HandleDownloadData(b.Log, rmsg, name, message.Caption, "", data, b.General)
+	helper.HandleDownloadData(b.Log, rmsg, name, message.Caption, url, data, b.General)
 	return nil
 }
 
