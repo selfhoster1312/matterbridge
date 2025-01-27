@@ -513,9 +513,22 @@ func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid
 	var media []interface{}
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
+
+		// If the file is only a URL, download it first
+		data := fi.Data
+
+		if data == nil {
+			data2, err := helper.DownloadFile(fi.URL)
+			if err != nil {
+				b.Log.Errorf("Failed to download file %s: %s", fi.URL, err)
+				continue
+			}
+			data = data2
+		}
+
 		file := tgbotapi.FileBytes{
 			Name:  fi.Name,
-			Bytes: *fi.Data,
+			Bytes: *data,
 		}
 
 		if b.GetString("MessageFormat") == HTMLFormat {
