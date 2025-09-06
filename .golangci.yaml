@@ -25,6 +25,8 @@ output:
 linters:
   default: all
   disable:
+    # too much work for me
+    - gochecknoinits
     # too much work for me (good-first-issue)
     - containedctx
     # err113 is really annoying to fix without proper error typing project-wide
