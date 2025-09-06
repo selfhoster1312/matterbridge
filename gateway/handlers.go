@@ -145,10 +145,11 @@ func (gw *Gateway) handleFilesUpload(fi *config.FileInfo) error {
 
 	req.Header.Set("Content-Type", "binary/octet-stream")
 
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("mediaserver upload failed, could not Do request: %#v", err)
 	}
+	defer resp.Body.Close()
 
 	return nil
 }
