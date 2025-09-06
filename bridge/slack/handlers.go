@@ -378,7 +378,8 @@ func (b *Bslack) handleDownloadFile(rmsg *config.Message, file *slack.File, retr
 		return nil
 	}
 	// Check that the file is neither too large nor blacklisted.
-	if err := helper.HandleDownloadSize(b.Log, rmsg, file.Name, int64(file.Size), b.General); err != nil {
+	err := helper.HandleDownloadSize(b.Log, rmsg, file.Name, int64(file.Size), b.General)
+	if err != nil {
 		b.Log.WithError(err).Infof("Skipping download of incoming file.")
 		return nil
 	}

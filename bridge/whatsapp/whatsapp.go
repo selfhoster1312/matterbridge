@@ -238,12 +238,13 @@ func (b *Bwhatsapp) PostDocumentMessage(msg config.Message, filetype string) (st
 	// create message ID
 	// TODO follow and act if https://github.com/Rhymen/go-whatsapp/issues/101 implemented
 	idBytes := make([]byte, 10)
-	if _, err := rand.Read(idBytes); err != nil {
+	_, err := rand.Read(idBytes)
+	if err != nil {
 		b.Log.Warn(err.Error())
 	}
 
 	message.Info.Id = strings.ToUpper(hex.EncodeToString(idBytes))
-	_, err := b.conn.Send(message)
+	_, err = b.conn.Send(message)
 
 	return message.Info.Id, err
 }
@@ -268,12 +269,13 @@ func (b *Bwhatsapp) PostImageMessage(msg config.Message, filetype string) (strin
 	// create message ID
 	// TODO follow and act if https://github.com/Rhymen/go-whatsapp/issues/101 implemented
 	idBytes := make([]byte, 10)
-	if _, err := rand.Read(idBytes); err != nil {
+	_, err := rand.Read(idBytes)
+	if err != nil {
 		b.Log.Warn(err.Error())
 	}
 
 	message.Info.Id = strings.ToUpper(hex.EncodeToString(idBytes))
-	_, err := b.conn.Send(message)
+	_, err = b.conn.Send(message)
 
 	return message.Info.Id, err
 }

@@ -160,7 +160,8 @@ func (gw *Gateway) mapChannelsToBridge(br *bridge.Bridge) {
 }
 
 func (gw *Gateway) reconnectBridge(br *bridge.Bridge) {
-	if err := br.Disconnect(); err != nil {
+	err := br.Disconnect()
+	if err != nil {
 		gw.logger.Errorf("Disconnect() %s failed: %s", br.Account, err)
 	}
 
@@ -169,7 +170,7 @@ func (gw *Gateway) reconnectBridge(br *bridge.Bridge) {
 RECONNECT:
 	gw.logger.Infof("Reconnecting %s", br.Account)
 
-	err := br.Connect()
+	err = br.Connect()
 	if err != nil {
 		gw.logger.Errorf("Reconnection failed: %s. Trying again in 60 seconds", err)
 		time.Sleep(time.Second * 60)
@@ -178,7 +179,8 @@ RECONNECT:
 	}
 
 	br.Joined = make(map[string]bool)
-	if err := br.JoinChannels(); err != nil {
+	err = br.JoinChannels()
+	if err != nil {
 		gw.logger.Errorf("JoinChannels() %s failed: %s", br.Account, err)
 	}
 }
@@ -636,7 +638,8 @@ func modifyInMessageTengo(filename string, msg *config.Message) error {
 		return err
 	}
 
-	if err := c.Run(); err != nil {
+	err = c.Run()
+	if err != nil {
 		return err
 	}
 
@@ -678,7 +681,8 @@ func (gw *Gateway) modifyUsernameTengo(msg *config.Message, br *bridge.Bridge) (
 		return "", err
 	}
 
-	if err := c.Run(); err != nil {
+	err = c.Run()
+	if err != nil {
 		return "", err
 	}
 
@@ -729,7 +733,8 @@ func (gw *Gateway) modifyOutMessageTengo(origmsg *config.Message, msg *config.Me
 		return drop, err
 	}
 
-	if err := c.Run(); err != nil {
+	err = c.Run()
+	if err != nil {
 		return drop, err
 	}
 

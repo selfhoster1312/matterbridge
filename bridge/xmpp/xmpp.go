@@ -129,7 +129,7 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 	if b.GetString("WebhookURL") != "" {
 		b.Log.Debugf("Sending message using Webhook")
 
-		err := b.postSlackCompatibleWebhook(msg)
+		err = b.postSlackCompatibleWebhook(msg)
 		if err != nil {
 			b.Log.Errorf("Failed to send message using webhook: %s", err)
 			return "", err
@@ -149,13 +149,14 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 
 	b.Log.Debugf("=> Sending message %#v", msg)
 
-	if _, err := b.xc.Send(xmpp.Chat{
+	_, err = b.xc.Send(xmpp.Chat{
 		Type:      "groupchat",
 		Remote:    msg.Channel + "@" + b.GetString("Muc"),
 		Text:      msg.Username + msg.Text,
 		ID:        msgID,
 		ReplaceID: msgReplaceID,
-	}); err != nil {
+	})
+	if err != nil {
 		return "", err
 	}
 
@@ -422,21 +423,23 @@ func (b *Bxmpp) handleUploadFile(msg *config.Message) error {
 			}
 		}
 
-		if _, err := b.xc.Send(xmpp.Chat{
+		_, err := b.xc.Send(xmpp.Chat{
 			Type:   "groupchat",
 			Remote: msg.Channel + "@" + b.GetString("Muc"),
 			Text:   msg.Username + msg.Text,
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 
 		if fileInfo.URL != "" {
-			if _, err := b.xc.SendOOB(xmpp.Chat{
+			_, err = b.xc.SendOOB(xmpp.Chat{
 				Type:    "groupchat",
 				Remote:  msg.Channel + "@" + b.GetString("Muc"),
 				Ooburl:  fileInfo.URL,
 				Oobdesc: urlDesc,
-			}); err != nil {
+			})
+			if err != nil {
 				b.Log.WithError(err).Warn("Failed to send share URL.")
 			}
 		}

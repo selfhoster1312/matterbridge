@@ -130,7 +130,8 @@ func (b *Brocketchat) skipMessage(message *models.Message) bool {
 
 func (b *Brocketchat) uploadFile(fi *config.FileInfo, channel string) error {
 	fb := gomf.New()
-	if err := fb.WriteField("description", fi.Comment); err != nil {
+	err := fb.WriteField("description", fi.Comment)
+	if err != nil {
 		return err
 	}
 
@@ -141,7 +142,8 @@ func (b *Brocketchat) uploadFile(fi *config.FileInfo, channel string) error {
 		return nil
 	}
 
-	if err := fb.WriteFile("file", fi.Name, mtype, *fi.Data); err != nil {
+	err = fb.WriteFile("file", fi.Name, mtype, *fi.Data)
+	if err != nil {
 		return err
 	}
 

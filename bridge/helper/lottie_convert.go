@@ -51,7 +51,8 @@ func ConvertTgsToX(data *[]byte, outputFormat string, logger *logrus.Entry) erro
 		}
 	}()
 
-	if _, writeErr := tmpInFile.Write(*data); writeErr != nil {
+	_, writeErr := tmpInFile.Write(*data)
+	if writeErr != nil {
 		return writeErr
 	}
 	// Must close before calling lottie to avoid data races:

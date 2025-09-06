@@ -66,7 +66,8 @@ func (b *Bmumble) Connect() error {
 		return err
 	}
 
-	if err = b.buildTLSConfig(); err != nil {
+	err = b.buildTLSConfig()
+	if err != nil {
 		return err
 	}
 

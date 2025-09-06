@@ -328,7 +328,8 @@ func ConvertWebPToPNG(data *[]byte) error {
 	var output []byte
 
 	w := bytes.NewBuffer(output)
-	if err := png.Encode(w, m); err != nil {
+	err = png.Encode(w, m)
+	if err != nil {
 		return err
 	}
 
