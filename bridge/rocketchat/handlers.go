@@ -69,7 +69,6 @@ func (b *Brocketchat) handleStatusEvent(ev models.Message, rmsg *config.Message)
 
 func (b *Brocketchat) handleRocketClient(messages chan *config.Message) {
 	for message := range b.messageChan {
-
 		// skip messages with same ID, apparently messages get duplicated for an unknown reason
 		if _, ok := b.cache.Get(message.ID); ok {
 			continue

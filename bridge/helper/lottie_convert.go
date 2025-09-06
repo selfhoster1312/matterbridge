@@ -91,7 +91,6 @@ func SupportsFormat(format string) bool {
 	default:
 		return false
 	}
-
 }
 
 func LottieBackend() string {

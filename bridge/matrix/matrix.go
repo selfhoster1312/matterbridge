@@ -236,7 +236,6 @@ func (b *Bmatrix) Send(msg config.Message) (string, error) {
 	// Upload a file if it exists
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-
 			err := b.retry(func() error {
 				_, err := b.mc.SendText(channel, rmsg.Username+rmsg.Text)
 
