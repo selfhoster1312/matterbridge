@@ -172,10 +172,10 @@ func (b *Bharmony) Connect() error {
 	return nil
 }
 
-func (b *Bharmony) send(msg config.Message) (id string, err error) {
+func (b *Bharmony) send(msg config.Message) (string, error) {
 	msgChan, err := strToU(msg.Channel)
 	if err != nil {
-		return id, err
+		return "", err
 	}
 
 	retID, err := b.c.ChatKit.SendMessage(&chatv1.SendMessageRequest{
@@ -207,7 +207,7 @@ func (b *Bharmony) send(msg config.Message) (id string, err error) {
 	return uToStr(retID.GetMessageId()), err
 }
 
-func (b *Bharmony) delete(msg config.Message) (id string, err error) {
+func (b *Bharmony) delete(msg config.Message) (string, error) {
 	msgChan, err := strToU(msg.Channel)
 	if err != nil {
 		return "", err
@@ -227,7 +227,7 @@ func (b *Bharmony) delete(msg config.Message) (id string, err error) {
 	return "", err
 }
 
-func (b *Bharmony) typing(msg config.Message) (id string, err error) {
+func (b *Bharmony) typing(msg config.Message) (string, error) {
 	msgChan, err := strToU(msg.Channel)
 	if err != nil {
 		return "", err
@@ -241,7 +241,7 @@ func (b *Bharmony) typing(msg config.Message) (id string, err error) {
 	return "", err
 }
 
-func (b *Bharmony) Send(msg config.Message) (id string, err error) {
+func (b *Bharmony) Send(msg config.Message) (string, error) {
 	switch msg.Event {
 	case "":
 		return b.send(msg)
