@@ -41,9 +41,9 @@ type IMessage struct {
 	Timestamp   string `schema:"timestamp"`
 	UserID      string `schema:"user_id"`
 	UserName    string `schema:"user_name"`
-	PostId      string `schema:"post_id"` //nolint:golint
+	PostId      string `schema:"post_id"`
 	RawText     string `schema:"raw_text"`
-	ServiceId   string `schema:"service_id"` //nolint:golint
+	ServiceId   string `schema:"service_id"`
 	Text        string `schema:"text"`
 	TriggerWord string `schema:"trigger_word"`
 	FileIDs     string `schema:"file_ids"`
@@ -52,7 +52,7 @@ type IMessage struct {
 // Client for Mattermost.
 type Client struct {
 	// URL for incoming webhooks on mattermost.
-	Url        string // nolint:golint
+	Url        string
 	In         chan IMessage
 	Out        chan OMessage
 	httpclient *http.Client
