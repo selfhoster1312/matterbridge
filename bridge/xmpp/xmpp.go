@@ -21,13 +21,12 @@ import (
 
 type Bxmpp struct {
 	*bridge.Config
+	sync.RWMutex
 
 	startTime time.Time
 	xc        *xmpp.Client
 	xmppMap   map[string]string
 	connected bool
-	sync.RWMutex
-
 	avatarAvailability map[string]bool
 	avatarMap          map[string]string
 }

@@ -26,13 +26,14 @@ type NicknameCacheEntry struct {
 }
 
 type Bmatrix struct {
+	sync.RWMutex
+	*bridge.Config
+
 	mc          *matrix.Client
 	UserID      string
 	NicknameMap map[string]NicknameCacheEntry
 	RoomMap     map[string]string
 	rateMutex   sync.RWMutex
-	sync.RWMutex
-	*bridge.Config
 }
 
 type httpError struct {
@@ -62,9 +63,10 @@ type MessageRelation struct {
 }
 
 type EditedMessage struct {
+	matrix.TextMessage
+
 	NewContent SubTextMessage  `json:"m.new_content"`
 	RelatedTo  MessageRelation `json:"m.relates_to"`
-	matrix.TextMessage
 }
 
 type InReplyToRelationContent struct {
@@ -76,8 +78,9 @@ type InReplyToRelation struct {
 }
 
 type ReplyMessage struct {
-	RelatedTo InReplyToRelation `json:"m.relates_to"`
 	matrix.TextMessage
+
+	RelatedTo InReplyToRelation `json:"m.relates_to"`
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

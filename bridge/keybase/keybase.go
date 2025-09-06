@@ -12,11 +12,12 @@ import (
 
 // Bkeybase bridge structure
 type Bkeybase struct {
+	*bridge.Config
+
 	kbc     *kbchat.API
 	user    string
 	channel string
 	team    string
-	*bridge.Config
 }
 
 // New initializes Bkeybase object and sets team

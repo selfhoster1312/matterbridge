@@ -33,10 +33,11 @@ type user struct {
 }
 
 type Bvk struct {
+	*bridge.Config
+
 	c            *api.VK
 	lp           *longpoll.LongPoll
 	usernamesMap map[int]user // cache of user names and avatar URLs
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

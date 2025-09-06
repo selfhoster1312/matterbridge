@@ -19,9 +19,10 @@ import (
 )
 
 type API struct {
-	Messages ring.Ring
 	sync.RWMutex
 	*bridge.Config
+
+	Messages ring.Ring
 	mrouter *melody.Melody
 }
 

@@ -50,12 +50,13 @@ type IMessage struct {
 
 // Client for Mattermost.
 type Client struct {
+	Config
+
 	// URL for incoming webhooks on mattermost.
 	Url        string
 	In         chan IMessage
 	Out        chan OMessage
 	httpclient *http.Client
-	Config
 }
 
 // Config for client.

@@ -16,11 +16,12 @@ import (
 )
 
 type Bzulip struct {
+	*bridge.Config
+	sync.RWMutex
+
 	q       *gzb.Queue
 	bot     *gzb.Bot
 	streams map[int]string
-	*bridge.Config
-	sync.RWMutex
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

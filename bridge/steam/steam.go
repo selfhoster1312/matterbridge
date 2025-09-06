@@ -14,11 +14,12 @@ import (
 )
 
 type Bsteam struct {
+	sync.RWMutex
+	*bridge.Config
+
 	c         *steam.Client
 	connected chan struct{}
 	userMap   map[steamid.SteamId]string
-	sync.RWMutex
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {
