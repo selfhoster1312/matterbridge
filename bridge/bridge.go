@@ -71,26 +71,6 @@ func (b *Bridge) SetChannelMembers(newMembers *config.ChannelMembers) {
 	b.Unlock()
 }
 
-func (b *Bridge) joinChannels(channels map[string]config.ChannelInfo, exists map[string]bool) error {
-	for ID, channel := range channels {
-		if exists[ID] {
-			continue
-		}
-
-		b.Log.Infof("%s: joining %s (ID: %s)", b.Account, channel.Name, ID)
-		time.Sleep(time.Duration(b.GetInt("JoinDelay")) * time.Millisecond)
-
-		err := b.JoinChannel(channel)
-		if err != nil {
-			return err
-		}
-
-		exists[ID] = true
-	}
-
-	return nil
-}
-
 func (b *Bridge) GetConfigKey(key string) string {
 	return b.Account + "." + key
 }
@@ -142,4 +122,24 @@ func (b *Bridge) GetStringSlice2D(key string) [][]string {
 	}
 
 	return val
+}
+
+func (b *Bridge) joinChannels(channels map[string]config.ChannelInfo, exists map[string]bool) error {
+	for ID, channel := range channels {
+		if exists[ID] {
+			continue
+		}
+
+		b.Log.Infof("%s: joining %s (ID: %s)", b.Account, channel.Name, ID)
+		time.Sleep(time.Duration(b.GetInt("JoinDelay")) * time.Millisecond)
+
+		err := b.JoinChannel(channel)
+		if err != nil {
+			return err
+		}
+
+		exists[ID] = true
+	}
+
+	return nil
 }

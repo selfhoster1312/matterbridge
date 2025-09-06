@@ -114,21 +114,6 @@ func (gw *Gateway) AddBridge(cfg *config.Bridge) error {
 	return nil
 }
 
-func (gw *Gateway) checkConfig(cfg *config.Bridge) {
-	match := false
-
-	for _, key := range gw.Router.Config.Viper().AllKeys() {
-		if strings.HasPrefix(key, strings.ToLower(cfg.Account)) {
-			match = true
-			break
-		}
-	}
-
-	if !match {
-		gw.logger.Fatalf("Account %s defined in gateway %s but no configuration found, exiting.", cfg.Account, gw.Name)
-	}
-}
-
 // AddConfig associates a new configuration with the gateway object.
 func (gw *Gateway) AddConfig(cfg *config.Gateway) error {
 	gw.Name = cfg.Name
@@ -149,6 +134,116 @@ func (gw *Gateway) AddConfig(cfg *config.Gateway) error {
 	}
 
 	return nil
+}
+
+// SendMessage sends a message (with specified parentID) to the channel on the selected
+// destination bridge and returns a message ID or an error.
+func (gw *Gateway) SendMessage(
+	rmsg *config.Message,
+	dest *bridge.Bridge,
+	channel *config.ChannelInfo,
+	canonicalParentMsgID string,
+) (string, error) {
+	msg := *rmsg
+	// Only send the avatar download event to ourselves.
+	if msg.Event == config.EventAvatarDownload {
+		if channel.ID != getChannelID(rmsg) {
+			return "", nil
+		}
+	} else {
+		// do not send to ourself for any other event
+		if channel.ID == getChannelID(rmsg) {
+			return "", nil
+		}
+	}
+
+	// Only send irc notices to irc
+	if msg.Event == config.EventNoticeIRC && dest.Protocol != "irc" {
+		return "", nil
+	}
+
+	// Too noisy to log like other events
+	debugSendMessage := ""
+	if msg.Event != config.EventUserTyping {
+		debugSendMessage = fmt.Sprintf("=> Sending %#v from %s (%s) to %s (%s)", msg, msg.Account, rmsg.Channel, dest.Account, channel.Name)
+	}
+
+	msg.Channel = channel.Name
+	msg.Avatar = gw.modifyAvatar(rmsg, dest)
+	msg.Username = gw.modifyUsername(rmsg, dest)
+
+	// exclude file delete event as the msg ID here is the native file ID that needs to be deleted
+	if msg.Event != config.EventFileDelete {
+		msg.ID = gw.getDestMsgID(rmsg.Protocol+" "+rmsg.ID, dest, channel)
+	}
+
+	// for api we need originchannel as channel
+	if dest.Protocol == apiProtocol {
+		msg.Channel = rmsg.Channel
+	}
+
+	msg.ParentID = gw.getDestMsgID(canonicalParentMsgID, dest, channel)
+	if msg.ParentID == "" {
+		msg.ParentID = strings.Replace(canonicalParentMsgID, dest.Protocol+" ", "", 1)
+	}
+
+	// if the parentID is still empty and we have a parentID set in the original message
+	// this means that we didn't find it in the cache so set it to a "msg-parent-not-found" constant
+	if msg.ParentID == "" && rmsg.ParentID != "" {
+		msg.ParentID = config.ParentIDNotFound
+	}
+
+	drop, err := gw.modifyOutMessageTengo(rmsg, &msg, dest)
+	if err != nil {
+		gw.logger.Errorf("modifySendMessageTengo: %s", err)
+	}
+
+	if drop {
+		gw.logger.Debugf("=> Tengo dropping %#v from %s (%s) to %s (%s)", msg, msg.Account, rmsg.Channel, dest.Account, channel.Name)
+		return "", nil
+	}
+
+	if debugSendMessage != "" {
+		gw.logger.Debug(debugSendMessage)
+	}
+	// if we are using mattermost plugin account, send messages to MattermostPlugin channel
+	// that can be picked up by the mattermost matterbridge plugin
+	if dest.Account == "mattermost.plugin" {
+		gw.Router.MattermostPlugin <- msg
+	}
+
+	defer func(t time.Time) {
+		gw.logger.Debugf("=> Send from %s (%s) to %s (%s) took %s", msg.Account, rmsg.Channel, dest.Account, channel.Name, time.Since(t))
+	}(time.Now())
+
+	mID, err := dest.Send(msg)
+	if err != nil {
+		return mID, err
+	}
+
+	// append the message ID (mID) from this bridge (dest) to our brMsgIDs slice
+	if mID != "" {
+		gw.logger.Debugf("mID %s: %s", dest.Account, mID)
+		return mID, nil
+		// brMsgIDs = append(brMsgIDs, &BrMsgID{dest, dest.Protocol + " " + mID, channel.ID})
+	}
+
+	return "", nil
+}
+
+func (gw *Gateway) checkConfig(cfg *config.Bridge) {
+	match := false
+
+	for _, key := range gw.Router.Config.Viper().AllKeys() {
+		if strings.HasPrefix(key, strings.ToLower(cfg.Account)) {
+			match = true
+			break
+		}
+	}
+
+	if !match {
+		gw.logger.Fatalf("Account %s defined in gateway %s but no configuration found, exiting.", cfg.Account, gw.Name)
+	}
 }
 
 func (gw *Gateway) mapChannelsToBridge(br *bridge.Bridge) {
@@ -477,101 +572,6 @@ func (gw *Gateway) modifyMessage(msg *config.Message) {
 	if msg.Protocol != apiProtocol {
 		msg.Gateway = gw.Name
 	}
-}
-
-// SendMessage sends a message (with specified parentID) to the channel on the selected
-// destination bridge and returns a message ID or an error.
-func (gw *Gateway) SendMessage(
-	rmsg *config.Message,
-	dest *bridge.Bridge,
-	channel *config.ChannelInfo,
-	canonicalParentMsgID string,
-) (string, error) {
-	msg := *rmsg
-	// Only send the avatar download event to ourselves.
-	if msg.Event == config.EventAvatarDownload {
-		if channel.ID != getChannelID(rmsg) {
-			return "", nil
-		}
-	} else {
-		// do not send to ourself for any other event
-		if channel.ID == getChannelID(rmsg) {
-			return "", nil
-		}
-	}
-
-	// Only send irc notices to irc
-	if msg.Event == config.EventNoticeIRC && dest.Protocol != "irc" {
-		return "", nil
-	}
-
-	// Too noisy to log like other events
-	debugSendMessage := ""
-	if msg.Event != config.EventUserTyping {
-		debugSendMessage = fmt.Sprintf("=> Sending %#v from %s (%s) to %s (%s)", msg, msg.Account, rmsg.Channel, dest.Account, channel.Name)
-	}
-
-	msg.Channel = channel.Name
-	msg.Avatar = gw.modifyAvatar(rmsg, dest)
-	msg.Username = gw.modifyUsername(rmsg, dest)
-
-	// exclude file delete event as the msg ID here is the native file ID that needs to be deleted
-	if msg.Event != config.EventFileDelete {
-		msg.ID = gw.getDestMsgID(rmsg.Protocol+" "+rmsg.ID, dest, channel)
-	}
-
-	// for api we need originchannel as channel
-	if dest.Protocol == apiProtocol {
-		msg.Channel = rmsg.Channel
-	}
-
-	msg.ParentID = gw.getDestMsgID(canonicalParentMsgID, dest, channel)
-	if msg.ParentID == "" {
-		msg.ParentID = strings.Replace(canonicalParentMsgID, dest.Protocol+" ", "", 1)
-	}
-
-	// if the parentID is still empty and we have a parentID set in the original message
-	// this means that we didn't find it in the cache so set it to a "msg-parent-not-found" constant
-	if msg.ParentID == "" && rmsg.ParentID != "" {
-		msg.ParentID = config.ParentIDNotFound
-	}
-
-	drop, err := gw.modifyOutMessageTengo(rmsg, &msg, dest)
-	if err != nil {
-		gw.logger.Errorf("modifySendMessageTengo: %s", err)
-	}
-
-	if drop {
-		gw.logger.Debugf("=> Tengo dropping %#v from %s (%s) to %s (%s)", msg, msg.Account, rmsg.Channel, dest.Account, channel.Name)
-		return "", nil
-	}
-
-	if debugSendMessage != "" {
-		gw.logger.Debug(debugSendMessage)
-	}
-	// if we are using mattermost plugin account, send messages to MattermostPlugin channel
-	// that can be picked up by the mattermost matterbridge plugin
-	if dest.Account == "mattermost.plugin" {
-		gw.Router.MattermostPlugin <- msg
-	}
-
-	defer func(t time.Time) {
-		gw.logger.Debugf("=> Send from %s (%s) to %s (%s) took %s", msg.Account, rmsg.Channel, dest.Account, channel.Name, time.Since(t))
-	}(time.Now())
-
-	mID, err := dest.Send(msg)
-	if err != nil {
-		return mID, err
-	}
-
-	// append the message ID (mID) from this bridge (dest) to our brMsgIDs slice
-	if mID != "" {
-		gw.logger.Debugf("mID %s: %s", dest.Account, mID)
-		return mID, nil
-		// brMsgIDs = append(brMsgIDs, &BrMsgID{dest, dest.Protocol + " " + mID, channel.ID})
-	}
-
-	return "", nil
 }
 
 func (gw *Gateway) validGatewayDest(msg *config.Message) bool {
