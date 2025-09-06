@@ -1,3 +1,4 @@
+//nolint:gosmopolitan
 package helper
 
 import (
