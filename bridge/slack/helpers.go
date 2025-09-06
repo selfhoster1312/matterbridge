@@ -242,35 +242,35 @@ func (b *Bslack) replaceCodeFence(text string) string {
 }
 
 // getUsersInConversation returns an array of userIDs that are members of channelID
-func (b *Bslack) getUsersInConversation(channelID string) ([]string, error) {
-	channelMembers := []string{}
+// func (b *Bslack) getUsersInConversation(channelID string) ([]string, error) {
+// 	channelMembers := []string{}
 
-	for {
-		queryParams := &slack.GetUsersInConversationParameters{
-			ChannelID: channelID,
-		}
+// 	for {
+// 		queryParams := &slack.GetUsersInConversationParameters{
+// 			ChannelID: channelID,
+// 		}
 
-		members, nextCursor, err := b.sc.GetUsersInConversation(queryParams)
-		if err != nil {
-			err = handleRateLimit(b.Log, err)
-			if err != nil {
-				return channelMembers, fmt.Errorf("could not retrieve users in channels: %#v", err)
-			}
+// 		members, nextCursor, err := b.sc.GetUsersInConversation(queryParams)
+// 		if err != nil {
+// 			err = handleRateLimit(b.Log, err)
+// 			if err != nil {
+// 				return channelMembers, fmt.Errorf("could not retrieve users in channels: %#v", err)
+// 			}
 
-			continue
-		}
+// 			continue
+// 		}
 
-		channelMembers = append(channelMembers, members...)
+// 		channelMembers = append(channelMembers, members...)
 
-		if nextCursor == "" {
-			break
-		}
+// 		if nextCursor == "" {
+// 			break
+// 		}
 
-		queryParams.Cursor = nextCursor
-	}
+// 		queryParams.Cursor = nextCursor
+// 	}
 
-	return channelMembers, nil
-}
+// 	return channelMembers, nil
+// }
 
 func handleRateLimit(log *logrus.Entry, err error) error {
 	rateLimit, ok := err.(*slack.RateLimitedError)
