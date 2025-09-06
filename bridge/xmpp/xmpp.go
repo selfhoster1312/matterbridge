@@ -163,6 +163,13 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 	return msgID, nil
 }
 
+func (b *Bxmpp) Connected() bool {
+	b.RLock()
+	defer b.RUnlock()
+
+	return b.connected
+}
+
 func (b *Bxmpp) postSlackCompatibleWebhook(msg config.Message) error {
 	type XMPPWebhook struct {
 		Username string `json:"username"`
@@ -505,11 +512,4 @@ func (b *Bxmpp) setConnected(state bool) {
 
 	b.connected = state
 	defer b.Unlock()
-}
-
-func (b *Bxmpp) Connected() bool {
-	b.RLock()
-	defer b.RUnlock()
-
-	return b.connected
 }

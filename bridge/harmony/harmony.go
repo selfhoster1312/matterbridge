@@ -44,6 +44,50 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	return b
 }
 
+func (b *Bharmony) Send(msg config.Message) (string, error) {
+	switch msg.Event {
+	case "":
+		return b.send(msg)
+	case config.EventMsgDelete:
+		return b.delete(msg)
+	case config.EventUserTyping:
+		return b.typing(msg)
+	default:
+		return "", nil
+	}
+}
+
+func (b *Bharmony) JoinChannel(channel config.ChannelInfo) error {
+	return nil
+}
+
+func (b *Bharmony) Disconnect() error {
+	return nil
+}
+
+func (b *Bharmony) GetUint64(conf string) uint64 {
+	num, err := strToU(b.GetString(conf))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return num
+}
+
+func (b *Bharmony) Connect() error {
+	c, err := shibshib.NewClient(b.GetString("Homeserver"), b.GetString("Token"), b.GetUint64("UserID"))
+	if err != nil {
+		return err
+	}
+
+	b.c = c
+	b.c.SubscribeToGuild(b.GetUint64("Community"))
+
+	go b.outputMessages()
+
+	return nil
+}
+
 func (b *Bharmony) getProfile(u uint64) (*profilev1.GetProfileResponse, error) {
 	if v, ok := b.profileCache[u]; ok && time.Since(v.lastUpdated) < time.Minute*10 {
 		return v.data, nil
@@ -149,29 +193,6 @@ func (b *Bharmony) outputMessages() {
 	}
 }
 
-func (b *Bharmony) GetUint64(conf string) uint64 {
-	num, err := strToU(b.GetString(conf))
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return num
-}
-
-func (b *Bharmony) Connect() error {
-	c, err := shibshib.NewClient(b.GetString("Homeserver"), b.GetString("Token"), b.GetUint64("UserID"))
-	if err != nil {
-		return err
-	}
-
-	b.c = c
-	b.c.SubscribeToGuild(b.GetUint64("Community"))
-
-	go b.outputMessages()
-
-	return nil
-}
-
 func (b *Bharmony) send(msg config.Message) (string, error) {
 	msgChan, err := strToU(msg.Channel)
 	if err != nil {
@@ -239,25 +260,4 @@ func (b *Bharmony) typing(msg config.Message) (string, error) {
 	})
 
 	return "", err
-}
-
-func (b *Bharmony) Send(msg config.Message) (string, error) {
-	switch msg.Event {
-	case "":
-		return b.send(msg)
-	case config.EventMsgDelete:
-		return b.delete(msg)
-	case config.EventUserTyping:
-		return b.typing(msg)
-	default:
-		return "", nil
-	}
-}
-
-func (b *Bharmony) JoinChannel(channel config.ChannelInfo) error {
-	return nil
-}
-
-func (b *Bharmony) Disconnect() error {
-	return nil
 }
