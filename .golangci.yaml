@@ -25,6 +25,8 @@ output:
 linters:
   default: all
   disable:
+    # looks really useless
+    - goconst
     # too much work for me
     - gochecknoinits
     # too much work for me (good-first-issue)
