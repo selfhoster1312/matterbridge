@@ -217,11 +217,9 @@ func (gw *Gateway) mapChannelConfig(cfg []config.Bridge, direction string) {
 			}
 			channel.SameChannel[gw.Name] = br.SameChannel
 			gw.Channels[channel.ID] = channel
-		} else {
+		} else if gw.Channels[ID].Direction != direction {
 			// if we already have a key and it's not our current direction it means we have a bidirectional inout
-			if gw.Channels[ID].Direction != direction {
-				gw.Channels[ID].Direction = "inout"
-			}
+			gw.Channels[ID].Direction = "inout"
 		}
 
 		gw.Channels[ID].SameChannel[gw.Name] = br.SameChannel

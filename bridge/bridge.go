@@ -73,17 +73,19 @@ func (b *Bridge) SetChannelMembers(newMembers *config.ChannelMembers) {
 
 func (b *Bridge) joinChannels(channels map[string]config.ChannelInfo, exists map[string]bool) error {
 	for ID, channel := range channels {
-		if !exists[ID] {
-			b.Log.Infof("%s: joining %s (ID: %s)", b.Account, channel.Name, ID)
-			time.Sleep(time.Duration(b.GetInt("JoinDelay")) * time.Millisecond)
-
-			err := b.JoinChannel(channel)
-			if err != nil {
-				return err
-			}
-
-			exists[ID] = true
+		if exists[ID] {
+			continue
 		}
+
+		b.Log.Infof("%s: joining %s (ID: %s)", b.Account, channel.Name, ID)
+		time.Sleep(time.Duration(b.GetInt("JoinDelay")) * time.Millisecond)
+
+		err := b.JoinChannel(channel)
+		if err != nil {
+			return err
+		}
+
+		exists[ID] = true
 	}
 
 	return nil
