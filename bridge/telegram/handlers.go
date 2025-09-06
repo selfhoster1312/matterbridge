@@ -440,7 +440,7 @@ func (b *Btelegram) handleDownload(rmsg *config.Message, message *tgbotapi.Messa
 		return nil
 	}
 	// if we have a file attached, download it (in memory) and put a pointer to it in msg.Extra
-	err := helper.HandleDownloadSize(b.Log, rmsg, name, int64(size), b.General)
+	err := helper.HandleDownloadSize(b.Log, rmsg, name, size, b.General)
 	if err != nil {
 		return err
 	}
