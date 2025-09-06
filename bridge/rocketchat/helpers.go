@@ -2,7 +2,7 @@ package brocketchat
 
 import (
 	"context"
-	"io/ioutil"
+	"io"
 	"mime"
 	"net/http"
 	"net/url"
@@ -163,7 +163,7 @@ func (b *Brocketchat) uploadFile(fi *config.FileInfo, channel string) error {
 	}
 	defer resp.Body.Close()
 
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return err
 	}

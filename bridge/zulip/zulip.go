@@ -2,7 +2,7 @@ package bzulip
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -198,7 +198,7 @@ func (b *Bzulip) sendMessage(msg config.Message) (string, error) {
 	if resp != nil {
 		defer resp.Body.Close()
 
-		res, err := ioutil.ReadAll(resp.Body)
+		res, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return "", err
 		}
