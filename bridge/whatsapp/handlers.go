@@ -136,6 +136,7 @@ func (b *Bwhatsapp) HandleTextMessage(message whatsapp.TextMessage) {
 }
 
 // HandleImageMessage sent from WhatsApp, relay it to the brige
+//
 //nolint:funlen
 func (b *Bwhatsapp) HandleImageMessage(message whatsapp.ImageMessage) {
 	if message.Info.FromMe || message.Info.Timestamp < b.startedAt {

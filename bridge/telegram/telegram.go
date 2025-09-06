@@ -22,7 +22,7 @@ const (
 type Btelegram struct {
 	*bridge.Config
 
-	c *tgbotapi.BotAPI
+	c         *tgbotapi.BotAPI
 	avatarMap map[string]string // keep cache of userid and avatar sha
 }
 
