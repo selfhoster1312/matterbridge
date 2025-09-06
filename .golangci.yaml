@@ -25,6 +25,8 @@ output:
 linters:
   default: all
   disable:
+    # too much refactor, too little value
+    - nestif
     # looks really useless
     - goconst
     # too much work for me
