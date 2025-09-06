@@ -42,20 +42,24 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	b.mrouter = melody.New()
 	b.mrouter.HandleMessage(func(s *melody.Session, msg []byte) {
 		message := config.Message{}
+
 		err := json.Unmarshal(msg, &message)
 		if err != nil {
 			b.Log.Errorf("failed to decode message from byte[] '%s'", string(msg))
 			return
 		}
+
 		b.handleWebsocketMessage(message, s)
 	})
 	b.mrouter.HandleConnect(func(session *melody.Session) {
 		greet := b.getGreeting()
+
 		data, err := json.Marshal(greet)
 		if err != nil {
 			b.Log.Errorf("failed to encode message '%v'", greet)
 			return
 		}
+
 		err = session.Write(data)
 		if err != nil {
 			b.Log.Errorf("failed to write message '%s'", string(data))
@@ -68,6 +72,7 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	if b.GetInt("Buffer") != 0 {
 		b.Messages.SetCapacity(b.GetInt("Buffer"))
 	}
+
 	if b.GetString("Token") != "" {
 		e.Use(middleware.KeyAuth(func(key string, c echo.Context) (bool, error) {
 			return key == b.GetString("Token"), nil
@@ -85,13 +90,16 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	e.GET("/api/stream", b.handleStream)
 	e.GET("/api/websocket", b.handleWebsocket)
 	e.POST("/api/message", b.handlePostMessage)
+
 	go func() {
 		if b.GetString("BindAddress") == "" {
 			b.Log.Fatalf("No BindAddress configured.")
 		}
+
 		b.Log.Infof("Listening on %s", b.GetString("BindAddress"))
 		b.Log.Fatal(e.Start(b.GetString("BindAddress")))
 	}()
+
 	return b
 }
 
@@ -114,6 +122,7 @@ func (b *API) Send(msg config.Message) (string, error) {
 	if msg.Event == config.EventMsgDelete {
 		return "", nil
 	}
+
 	b.Log.Debugf("enqueueing message from %s on ring buffer", msg.Username)
 	b.Messages.Enqueue(msg)
 
@@ -121,7 +130,9 @@ func (b *API) Send(msg config.Message) (string, error) {
 	if err != nil {
 		b.Log.Errorf("failed to encode message  '%s'", msg)
 	}
+
 	_ = b.mrouter.Broadcast(data)
+
 	return "", nil
 }
 
@@ -131,7 +142,8 @@ func (b *API) handleHealthcheck(c echo.Context) error {
 
 func (b *API) handlePostMessage(c echo.Context) error {
 	message := config.Message{}
-	if err := c.Bind(&message); err != nil {
+	err := c.Bind(&message)
+	if err != nil {
 		return err
 	}
 	// these values are fixed
@@ -149,9 +161,11 @@ func (b *API) handlePostMessage(c echo.Context) error {
 
 	for i, f := range message.Extra["file"] {
 		fi := config.FileInfo{}
+
 		if fm, ok = f.(map[string]interface{}); !ok {
 			return echo.NewHTTPError(http.StatusInternalServerError, "invalid format for extra")
 		}
+
 		err := mapstructure.Decode(fm, &fi)
 		if err != nil {
 			if !strings.Contains(err.Error(), "got string") {
@@ -167,19 +181,25 @@ func (b *API) handlePostMessage(c echo.Context) error {
 		if err != nil {
 			return err
 		}
+
 		fi.Data = &data
 		message.Extra["file"][i] = fi
 	}
+
 	b.Log.Debugf("Sending message from %s on %s to gateway", message.Username, "api")
+
 	b.Remote <- message
+
 	return c.JSON(http.StatusOK, message)
 }
 
 func (b *API) handleMessages(c echo.Context) error {
 	b.Lock()
 	defer b.Unlock()
+
 	c.JSONPretty(http.StatusOK, b.Messages.Values(), " ")
 	b.Messages = ring.Ring{}
+
 	return nil
 }
 
@@ -193,22 +213,29 @@ func (b *API) getGreeting() config.Message {
 func (b *API) handleStream(c echo.Context) error {
 	c.Response().Header().Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 	c.Response().WriteHeader(http.StatusOK)
+
 	greet := b.getGreeting()
-	if err := json.NewEncoder(c.Response()).Encode(greet); err != nil {
+	err := json.NewEncoder(c.Response()).Encode(greet)
+	if err != nil {
 		return err
 	}
+
 	c.Response().Flush()
+
 	for {
 		select {
 		// TODO: this causes issues, messages should be broadcasted to all connected clients
 		default:
 			msg := b.Messages.Dequeue()
 			if msg != nil {
-				if err := json.NewEncoder(c.Response()).Encode(msg); err != nil {
+				err := json.NewEncoder(c.Response()).Encode(msg)
+				if err != nil {
 					return err
 				}
+
 				c.Response().Flush()
 			}
+
 			time.Sleep(100 * time.Millisecond)
 		case <-c.Request().Context().Done():
 			return nil
@@ -228,9 +255,11 @@ func (b *API) handleWebsocketMessage(message config.Message, s *melody.Session) 
 		b.Log.Errorf("failed to encode message for loopback '%v'", message)
 		return
 	}
+
 	_ = b.mrouter.BroadcastOthers(data, s)
 
 	b.Log.Debugf("Sending websocket message from %s on %s to gateway", message.Username, "api")
+
 	b.Remote <- message
 }
 

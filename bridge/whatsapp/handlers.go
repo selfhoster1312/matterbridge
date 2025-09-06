@@ -63,6 +63,7 @@ func (b *Bwhatsapp) reconnect(err error) {
 		err := b.conn.Restore()
 		if err == nil {
 			bf.Reset()
+
 			b.startedAt = uint64(time.Now().Unix())
 
 			return
@@ -85,7 +86,7 @@ func (b *Bwhatsapp) HandleTextMessage(message whatsapp.TextMessage) {
 
 	if len(senderJID) == 0 {
 		if message.Info.Source != nil && message.Info.Source.Participant != nil {
-			senderJID = *message.Info.Source.Participant
+			senderJID = message.Info.Source.GetParticipant()
 		}
 	}
 
@@ -95,10 +96,10 @@ func (b *Bwhatsapp) HandleTextMessage(message whatsapp.TextMessage) {
 		senderName = "Someone" // don't expose telephone number
 	}
 
-	extText := message.Info.Source.Message.ExtendedTextMessage
-	if extText != nil && extText.ContextInfo != nil && extText.ContextInfo.MentionedJid != nil {
+	extText := message.Info.Source.GetMessage().GetExtendedTextMessage()
+	if extText != nil && extText.GetContextInfo() != nil && extText.ContextInfo.MentionedJid != nil {
 		// handle user mentions
-		for _, mentionedJID := range extText.ContextInfo.MentionedJid {
+		for _, mentionedJID := range extText.GetContextInfo().GetMentionedJid() {
 			numberAndSuffix := strings.SplitN(mentionedJID, "@", 2)
 
 			// mentions comes as telephone numbers and we don't want to expose it to other bridges
@@ -143,7 +144,7 @@ func (b *Bwhatsapp) HandleImageMessage(message whatsapp.ImageMessage) {
 
 	senderJID := message.Info.SenderJid
 	if len(message.Info.SenderJid) == 0 && message.Info.Source != nil && message.Info.Source.Participant != nil {
-		senderJID = *message.Info.Source.Participant
+		senderJID = message.Info.Source.GetParticipant()
 	}
 
 	senderName := b.getSenderName(message.Info.SenderJid)
@@ -210,7 +211,7 @@ func (b *Bwhatsapp) HandleVideoMessage(message whatsapp.VideoMessage) {
 
 	senderJID := message.Info.SenderJid
 	if len(message.Info.SenderJid) == 0 && message.Info.Source != nil && message.Info.Source.Participant != nil {
-		senderJID = *message.Info.Source.Participant
+		senderJID = message.Info.Source.GetParticipant()
 	}
 
 	senderName := b.getSenderName(message.Info.SenderJid)
@@ -271,7 +272,7 @@ func (b *Bwhatsapp) HandleAudioMessage(message whatsapp.AudioMessage) {
 
 	senderJID := message.Info.SenderJid
 	if len(message.Info.SenderJid) == 0 && message.Info.Source != nil && message.Info.Source.Participant != nil {
-		senderJID = *message.Info.Source.Participant
+		senderJID = message.Info.Source.GetParticipant()
 	}
 
 	senderName := b.getSenderName(message.Info.SenderJid)
@@ -332,7 +333,7 @@ func (b *Bwhatsapp) HandleDocumentMessage(message whatsapp.DocumentMessage) {
 
 	senderJID := message.Info.SenderJid
 	if len(message.Info.SenderJid) == 0 && message.Info.Source != nil && message.Info.Source.Participant != nil {
-		senderJID = *message.Info.Source.Participant
+		senderJID = message.Info.Source.GetParticipant()
 	}
 
 	senderName := b.getSenderName(message.Info.SenderJid)
@@ -361,7 +362,7 @@ func (b *Bwhatsapp) HandleDocumentMessage(message whatsapp.DocumentMessage) {
 		return
 	}
 
-	filename := fmt.Sprintf("%v", message.FileName)
+	filename := message.FileName
 
 	b.Log.Debugf("Trying to download %s with extension %s and type %s", filename, fileExt, message.Type)
 

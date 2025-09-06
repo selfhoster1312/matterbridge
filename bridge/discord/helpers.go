@@ -17,6 +17,7 @@ func (b *Bdiscord) getAllowedMentions() *discordgo.MessageAllowedMentions {
 
 	// Otherwise, allow only the mentions that are specified
 	allowedMentionTypes := make([]discordgo.AllowedMentionType, 0, 3)
+
 	for _, m := range b.GetStringSlice("AllowMention") {
 		switch m {
 		case "everyone":
@@ -55,12 +56,15 @@ func (b *Bdiscord) getNick(user *discordgo.User, guildID string) string {
 		b.Log.Warnf("Got no information for member %#v", user)
 		return user.Username
 	}
+
 	b.userMemberMap[user.ID] = member
+
 	b.nickMemberMap[member.User.Username] = member
 	if member.Nick != "" {
 		b.nickMemberMap[member.Nick] = member
 		return member.Nick
 	}
+
 	return user.Username
 }
 
@@ -71,6 +75,7 @@ func (b *Bdiscord) getGuildMemberByNick(nick string) (*discordgo.Member, error) 
 	if member, ok := b.nickMemberMap[strings.TrimSpace(nick)]; ok {
 		return member, nil
 	}
+
 	return nil, errors.New("Couldn't find guild member with nick " + nick) // This will most likely get ignored by the caller
 }
 
@@ -78,6 +83,7 @@ func (b *Bdiscord) getChannelID(name string) string {
 	if strings.Contains(name, "/") {
 		return b.getCategoryChannelID(name)
 	}
+
 	b.channelsMutex.RLock()
 	defer b.channelsMutex.RUnlock()
 
@@ -85,22 +91,26 @@ func (b *Bdiscord) getChannelID(name string) string {
 	if len(idcheck) > 1 {
 		return idcheck[1]
 	}
+
 	for _, channel := range b.channels {
 		if channel.Name == name && channel.Type == discordgo.ChannelTypeGuildText {
 			return channel.ID
 		}
 	}
+
 	return ""
 }
 
 func (b *Bdiscord) getCategoryChannelID(name string) string {
 	b.channelsMutex.RLock()
 	defer b.channelsMutex.RUnlock()
+
 	res := strings.Split(name, "/")
 	// shouldn't happen because function should be only called from getChannelID
 	if len(res) != 2 {
 		return ""
 	}
+
 	catName, chanName := res[0], res[1]
 	for _, channel := range b.channels {
 		// if we have a parentID, lookup the name of that parent (category)
@@ -113,6 +123,7 @@ func (b *Bdiscord) getCategoryChannelID(name string) string {
 			}
 		}
 	}
+
 	return ""
 }
 
@@ -132,6 +143,7 @@ func (b *Bdiscord) getChannelName(id string) string {
 			return b.getCategoryChannelName(channel.Name, channel.ParentID)
 		}
 	}
+
 	return ""
 }
 
@@ -154,6 +166,7 @@ func (b *Bdiscord) getCategoryChannelName(name, parentID string) string {
 			name = c.Name + "/" + name
 		}
 	}
+
 	return name
 }
 
@@ -172,14 +185,18 @@ func (b *Bdiscord) replaceChannelMentions(text string) string {
 		// If we don't have the channel refresh our list.
 		if channelName == "" {
 			var err error
+
 			b.channels, err = b.c.GuildChannels(b.guildID)
 			if err != nil {
 				return "#unknownchannel"
 			}
+
 			channelName = b.getChannelName(channelID)
 		}
+
 		return "#" + channelName
 	}
+
 	return channelMentionRE.ReplaceAllStringFunc(text, replaceChannelMentionFunc)
 }
 
@@ -194,16 +211,20 @@ func (b *Bdiscord) replaceUserMentions(text string) string {
 		usernames := enumerateUsernames(match[1:])
 		for _, username = range usernames {
 			b.Log.Debugf("Testing mention: '%s'", username)
+
 			member, err = b.getGuildMemberByNick(username)
 			if err == nil {
 				break
 			}
 		}
+
 		if member == nil {
 			return match
 		}
+
 		return strings.Replace(match, "@"+username, member.User.Mention(), 1)
 	}
+
 	return userMentionRE.ReplaceAllStringFunc(text, replaceUserMentionFunc)
 }
 
@@ -216,6 +237,7 @@ func (b *Bdiscord) replaceAction(text string) (string, bool) {
 	if length > 1 && text[0] == '_' && text[length-1] == '_' {
 		return text[1 : length-1], true
 	}
+
 	return text, false
 }
 
@@ -226,34 +248,43 @@ func (b *Bdiscord) splitURL(url string) (string, string, bool) {
 		webhookIdxID              = 5
 		webhookIdxToken           = 6
 	)
+
 	webhookURLSplit := strings.Split(url, "/")
 	if len(webhookURLSplit) != expectedWebhookSplitCount {
 		return "", "", false
 	}
+
 	return webhookURLSplit[webhookIdxID], webhookURLSplit[webhookIdxToken], true
 }
 
 func enumerateUsernames(s string) []string {
 	onlySpace := true
+
 	for _, r := range s {
 		if !unicode.IsSpace(r) {
 			onlySpace = false
 			break
 		}
 	}
+
 	if onlySpace {
 		return nil
 	}
 
-	var username, endSpace string
-	var usernames []string
+	var (
+		username, endSpace string
+		usernames          []string
+	)
+
 	skippingSpace := true
+
 	for _, r := range s {
 		if unicode.IsSpace(r) {
 			if !skippingSpace {
 				usernames = append(usernames, username)
 				skippingSpace = true
 			}
+
 			endSpace += string(r)
 			username += string(r)
 		} else {
@@ -262,8 +293,10 @@ func enumerateUsernames(s string) []string {
 			skippingSpace = false
 		}
 	}
+
 	if endSpace == "" {
 		usernames = append(usernames, username)
 	}
+
 	return usernames
 }

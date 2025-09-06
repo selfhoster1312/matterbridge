@@ -1,3 +1,4 @@
+//go:build !noxmpp
 // +build !noxmpp
 
 package bridgemap

@@ -16,8 +16,8 @@ func (b *Bmumble) handleServerConfig(event *gumble.ServerConfigEvent) {
 
 func (b *Bmumble) handleTextMessage(event *gumble.TextMessageEvent) {
 	sender := "unknown"
-	if event.TextMessage.Sender != nil {
-		sender = event.TextMessage.Sender.Name
+	if event.Sender != nil {
+		sender = event.Sender.Name
 	}
 	// If the text message is received before receiving a ServerSync
 	// and UserState, Client.Self or Self.Channel are nil
@@ -26,11 +26,13 @@ func (b *Bmumble) handleTextMessage(event *gumble.TextMessageEvent) {
 		return
 	}
 	// Convert Mumble HTML messages to markdown
-	parts, err := b.convertHTMLtoMarkdown(event.TextMessage.Message)
+	parts, err := b.convertHTMLtoMarkdown(event.Message)
 	if err != nil {
 		b.Log.Error(err)
 	}
+
 	now := time.Now().UTC()
+
 	for i, part := range parts {
 		// Construct matterbridge message and pass on to the gateway
 		rmsg := config.Message{
@@ -46,18 +48,25 @@ func (b *Bmumble) handleTextMessage(event *gumble.TextMessageEvent) {
 			if fileExt == ".jfif" {
 				fileExt = ".jpg"
 			}
+
 			if fileExt == ".jpe" {
 				fileExt = ".jpg"
 			}
+
 			fname := b.Account + "_" + strconv.FormatInt(now.UnixNano(), 10) + "_" + strconv.Itoa(i) + fileExt
+
 			rmsg.Extra = make(map[string][]interface{})
-			if err = helper.HandleDownloadSize(b.Log, &rmsg, fname, int64(len(part.Image)), b.General); err != nil {
+			err = helper.HandleDownloadSize(b.Log, &rmsg, fname, int64(len(part.Image)), b.General)
+			if err != nil {
 				b.Log.WithError(err).Warn("not including image in message")
 				continue
 			}
+
 			helper.HandleDownloadData(b.Log, &rmsg, fname, "", "", &part.Image, b.General)
 		}
+
 		b.Log.Debugf("Sending message to gateway: %+v", rmsg)
+
 		b.Remote <- rmsg
 	}
 }
@@ -71,9 +80,11 @@ func (b *Bmumble) handleConnect(event *gumble.ConnectEvent) {
 	event.Client.Self.SetSelfDeafened(true)
 	// if the Channel variable is set, this is a reconnect -> rejoin channel
 	if b.Channel != nil {
-		if err := b.doJoin(event.Client, *b.Channel); err != nil {
+		err := b.doJoin(event.Client, *b.Channel)
+		if err != nil {
 			b.Log.Error(err)
 		}
+
 		b.Remote <- config.Message{
 			Username: "system",
 			Text:     "rejoin",
@@ -89,12 +100,15 @@ func (b *Bmumble) handleJoinLeave(event *gumble.UserChangeEvent) {
 	if b.Channel == nil {
 		return
 	}
+
 	if b.GetBool("nosendjoinpart") {
 		return
 	}
+
 	b.Log.Debugf("Received gumble user change event: %+v", event)
 
 	text := ""
+
 	switch {
 	case event.Type&gumble.UserChangeKicked > 0:
 		text = " was kicked"
@@ -136,7 +150,8 @@ func (b *Bmumble) handleUserModified(event *gumble.UserChangeEvent) {
 
 	if event.Type&gumble.UserChangeChannel > 0 {
 		// Someone attempted to move the user out of the configured channel; attempt to join back
-		if err := b.doJoin(event.Client, *b.Channel); err != nil {
+		err := b.doJoin(event.Client, *b.Channel)
+		if err != nil {
 			b.Log.Error(err)
 		}
 	}

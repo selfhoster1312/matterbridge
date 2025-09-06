@@ -50,7 +50,7 @@ func (e *NullAudioEncoder) ID() int {
 }
 
 func (e *NullAudioEncoder) Encode(pcm []int16, mframeSize, maxDataBytes int) ([]byte, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 func (e *NullAudioEncoder) Reset() {
@@ -63,7 +63,7 @@ func (d *NullAudioDecoder) ID() int {
 }
 
 func (d *NullAudioDecoder) Decode(data []byte, frameSize int) ([]int16, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 func (d *NullAudioDecoder) Reset() {

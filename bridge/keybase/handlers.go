@@ -29,19 +29,18 @@ func (b *Bkeybase) handleKeybase() {
 			}
 
 			b.handleMessage(msg.Message)
-
 		}
 	}()
 }
 
 func (b *Bkeybase) handleMessage(msg chat1.MsgSummary) {
 	b.Log.Debugf("== Receiving event: %#v", msg)
+
 	if msg.Channel.TopicName != b.channel || msg.Channel.Name != b.team {
 		return
 	}
 
 	if msg.Sender.Username != b.kbc.GetUsername() {
-
 		// TODO download avatar
 
 		// Create our message
@@ -54,6 +53,7 @@ func (b *Bkeybase) handleMessage(msg chat1.MsgSummary) {
 		}
 
 		b.Log.Debugf("<= Sending message from %s on %s to gateway", msg.Sender.Username, msg.Channel.Name)
+
 		b.Remote <- rmsg
 	}
 }

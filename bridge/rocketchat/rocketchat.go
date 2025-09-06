@@ -40,6 +40,7 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	if err != nil {
 		cfg.Log.Fatalf("Could not create LRU cache for rocketchat bridge: %v", err)
 	}
+
 	b := &Brocketchat{
 		Config:      cfg,
 		messageChan: make(chan models.Message),
@@ -47,6 +48,7 @@ func New(cfg *bridge.Config) bridge.Bridger {
 		cache:       newCache,
 	}
 	b.Log.Debugf("enabling rocketchat")
+
 	return b
 }
 
@@ -56,31 +58,42 @@ func (b *Brocketchat) Command(cmd string) string {
 
 func (b *Brocketchat) Connect() error {
 	if b.GetString("WebhookBindAddress") != "" {
-		if err := b.doConnectWebhookBind(); err != nil {
+		err := b.doConnectWebhookBind()
+		if err != nil {
 			return err
 		}
+
 		go b.handleRocket()
+
 		return nil
 	}
+
 	switch {
 	case b.GetString("WebhookURL") != "":
-		if err := b.doConnectWebhookURL(); err != nil {
+		err := b.doConnectWebhookURL()
+		if err != nil {
 			return err
 		}
+
 		go b.handleRocket()
+
 		return nil
 	case b.GetString("Login") != "":
 		b.Log.Info("Connecting using login/password (sending and receiving)")
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
 		}
+
 		go b.handleRocket()
 	}
+
 	if b.GetString("WebhookBindAddress") == "" && b.GetString("WebhookURL") == "" &&
 		b.GetString("Login") == "" {
 		return errors.New("no connection method found. See that you have WebhookBindAddress, WebhookURL or Login/Password/Server configured")
 	}
+
 	return nil
 }
 
@@ -92,20 +105,25 @@ func (b *Brocketchat) JoinChannel(channel config.ChannelInfo) error {
 	if b.c == nil {
 		return nil
 	}
+
 	id, err := b.c.GetChannelId(strings.TrimPrefix(channel.Name, "#"))
 	if err != nil {
 		return err
 	}
+
 	b.Lock()
 	b.channelMap[id] = channel.Name
 	b.Unlock()
+
 	mychannel := &models.Channel{ID: id, Name: strings.TrimPrefix(channel.Name, "#")}
 	if err := b.c.JoinChannel(id); err != nil {
 		return err
 	}
+
 	if err := b.c.SubscribeToMessageStream(mychannel, b.messageChan); err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -124,6 +142,7 @@ func (b *Brocketchat) Send(msg config.Message) (string, error) {
 		if msg.ID == "" {
 			return "", nil
 		}
+
 		return msg.ID, b.c.DeleteMessage(&models.Message{ID: msg.ID})
 	}
 
@@ -147,6 +166,7 @@ func (b *Brocketchat) Send(msg config.Message) (string, error) {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
 			// strip the # if people has set this
 			rmsg.Channel = strings.TrimPrefix(rmsg.Channel, "#")
+
 			smsg := &models.Message{
 				RoomID: b.getChannelID(rmsg.Channel),
 				Msg:    rmsg.Username + rmsg.Text,
@@ -159,6 +179,7 @@ func (b *Brocketchat) Send(msg config.Message) (string, error) {
 				b.Log.Errorf("SendMessage failed: %s", err)
 			}
 		}
+
 		if len(msg.Extra["file"]) > 0 {
 			return "", b.handleUploadFile(&msg)
 		}
@@ -177,5 +198,6 @@ func (b *Brocketchat) Send(msg config.Message) (string, error) {
 	if rmsg == nil {
 		return "", err
 	}
+
 	return rmsg.ID, err
 }

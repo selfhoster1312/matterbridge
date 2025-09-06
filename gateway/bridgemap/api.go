@@ -1,3 +1,4 @@
+//go:build !noapi
 // +build !noapi
 
 package bridgemap

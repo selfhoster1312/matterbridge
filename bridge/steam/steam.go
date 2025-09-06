@@ -25,27 +25,30 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	b := &Bsteam{Config: cfg}
 	b.userMap = make(map[steamid.SteamId]string)
 	b.connected = make(chan struct{})
+
 	return b
 }
 
 func (b *Bsteam) Connect() error {
 	b.Log.Info("Connecting")
+
 	b.c = steam.NewClient()
 	go b.handleEvents()
 	go b.c.Connect()
+
 	select {
 	case <-b.connected:
 		b.Log.Info("Connection succeeded")
 	case <-time.After(time.Second * 30):
-		return fmt.Errorf("connection timed out")
+		return errors.New("connection timed out")
 	}
+
 	return nil
 }
 
 func (b *Bsteam) Disconnect() error {
 	b.c.Disconnect()
 	return nil
-
 }
 
 func (b *Bsteam) JoinChannel(channel config.ChannelInfo) error {
@@ -53,7 +56,9 @@ func (b *Bsteam) JoinChannel(channel config.ChannelInfo) error {
 	if err != nil {
 		return err
 	}
+
 	b.c.Social.JoinChat(id)
+
 	return nil
 }
 
@@ -62,6 +67,7 @@ func (b *Bsteam) Send(msg config.Message) (string, error) {
 	if msg.Event == config.EventMsgDelete {
 		return "", nil
 	}
+
 	id, err := steamid.NewId(msg.Channel)
 	if err != nil {
 		return "", err
@@ -72,24 +78,31 @@ func (b *Bsteam) Send(msg config.Message) (string, error) {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
 			b.c.Social.SendMessage(id, steamlang.EChatEntryType_ChatMsg, rmsg.Username+rmsg.Text)
 		}
+
 		for i := range msg.Extra["file"] {
-			if err := b.handleFileInfo(&msg, msg.Extra["file"][i]); err != nil {
+			err := b.handleFileInfo(&msg, msg.Extra["file"][i])
+			if err != nil {
 				b.Log.Error(err)
 			}
+
 			b.c.Social.SendMessage(id, steamlang.EChatEntryType_ChatMsg, msg.Username+msg.Text)
 		}
+
 		return "", nil
 	}
 
 	b.c.Social.SendMessage(id, steamlang.EChatEntryType_ChatMsg, msg.Username+msg.Text)
+
 	return "", nil
 }
 
 func (b *Bsteam) getNick(id steamid.SteamId) string {
 	b.RLock()
 	defer b.RUnlock()
+
 	if name, ok := b.userMap[id]; ok {
 		return name
 	}
+
 	return "unknown"
 }

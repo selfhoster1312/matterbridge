@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"image"
+	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	_ "image/gif"
 
 	"github.com/42wim/matterbridge/bridge"
 	"github.com/42wim/matterbridge/bridge/config"
@@ -89,12 +89,15 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	b := &Bmatrix{Config: cfg}
 	b.RoomMap = make(map[string]string)
 	b.NicknameMap = make(map[string]NicknameCacheEntry)
+
 	return b
 }
 
 func (b *Bmatrix) Connect() error {
 	var err error
+
 	b.Log.Infof("Connecting %s", b.GetString("Server"))
+
 	if b.GetString("MxID") != "" && b.GetString("Token") != "" {
 		b.mc, err = matrix.NewClient(
 			b.GetString("Server"), b.GetString("MxID"), b.GetString("Token"),
@@ -102,6 +105,7 @@ func (b *Bmatrix) Connect() error {
 		if err != nil {
 			return err
 		}
+
 		b.UserID = b.GetString("MxID")
 		b.Log.Info("Using existing Matrix credentials")
 	} else {
@@ -109,6 +113,7 @@ func (b *Bmatrix) Connect() error {
 		if err != nil {
 			return err
 		}
+
 		resp, err := b.mc.Login(&matrix.ReqLogin{
 			Type:       "m.login.password",
 			User:       b.GetString("Login"),
@@ -118,11 +123,14 @@ func (b *Bmatrix) Connect() error {
 		if err != nil {
 			return err
 		}
+
 		b.mc.SetCredentials(resp.UserID, resp.AccessToken)
 		b.UserID = resp.UserID
 		b.Log.Info("Connection succeeded")
 	}
+
 	go b.handlematrix()
+
 	return nil
 }
 
@@ -233,7 +241,6 @@ func (b *Bmatrix) Send(msg config.Message) (string, error) {
 	// Upload a file if it exists
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-			rmsg := rmsg
 
 			err := b.retry(func() error {
 				_, err := b.mc.SendText(channel, rmsg.Username+rmsg.Text)
@@ -262,15 +269,15 @@ func (b *Bmatrix) Send(msg config.Message) (string, error) {
 		}
 
 		rmsg.NewContent = SubTextMessage{
-			Body:          rmsg.TextMessage.Body,
-			FormattedBody: rmsg.TextMessage.FormattedBody,
-			Format:        rmsg.TextMessage.Format,
+			Body:          rmsg.Body,
+			FormattedBody: rmsg.FormattedBody,
+			Format:        rmsg.Format,
 			MsgType:       "m.text",
 		}
 
 		if b.GetBool("HTMLDisable") {
-			rmsg.TextMessage.Format = ""
-			rmsg.TextMessage.FormattedBody = ""
+			rmsg.Format = ""
+			rmsg.FormattedBody = ""
 			rmsg.NewContent.Format = ""
 			rmsg.NewContent.FormattedBody = ""
 		}
@@ -334,8 +341,8 @@ func (b *Bmatrix) Send(msg config.Message) (string, error) {
 		}
 
 		if b.GetBool("HTMLDisable") {
-			m.TextMessage.Format = ""
-			m.TextMessage.FormattedBody = ""
+			m.Format = ""
+			m.FormattedBody = ""
 		}
 
 		m.RelatedTo = InReplyToRelation{
@@ -402,12 +409,15 @@ func (b *Bmatrix) handlematrix() {
 	syncer.OnEventType("m.room.redaction", b.handleEvent)
 	syncer.OnEventType("m.room.message", b.handleEvent)
 	syncer.OnEventType("m.room.member", b.handleMemberChange)
+
 	go func() {
 		for {
 			if b == nil {
 				return
 			}
-			if err := b.mc.Sync(); err != nil {
+
+			err := b.mc.Sync()
+			if err != nil {
 				b.Log.Println("Sync() returned ", err)
 			}
 		}
@@ -416,19 +426,22 @@ func (b *Bmatrix) handlematrix() {
 
 func (b *Bmatrix) handleEdit(ev *matrix.Event, rmsg config.Message) bool {
 	relationInterface, present := ev.Content["m.relates_to"]
+
 	newContentInterface, present2 := ev.Content["m.new_content"]
-	if !(present && present2) {
+	if !present || !present2 {
 		return false
 	}
 
 	var relation MessageRelation
-	if err := interface2Struct(relationInterface, &relation); err != nil {
+	err := interface2Struct(relationInterface, &relation)
+	if err != nil {
 		b.Log.Warnf("Couldn't parse 'm.relates_to' object with value %#v", relationInterface)
 		return false
 	}
 
 	var newContent SubTextMessage
-	if err := interface2Struct(newContentInterface, &newContent); err != nil {
+	err := interface2Struct(newContentInterface, &newContent)
+	if err != nil {
 		b.Log.Warnf("Couldn't parse 'm.new_content' object with value %#v", newContentInterface)
 		return false
 	}
@@ -443,6 +456,7 @@ func (b *Bmatrix) handleEdit(ev *matrix.Event, rmsg config.Message) bool {
 
 	rmsg.ID = relation.EventID
 	rmsg.Text = newContent.Body
+
 	rmsg.Text += b.GetString("EditSuffix")
 	b.Remote <- rmsg
 
@@ -456,7 +470,8 @@ func (b *Bmatrix) handleReply(ev *matrix.Event, rmsg config.Message) bool {
 	}
 
 	var relation InReplyToRelation
-	if err := interface2Struct(relationInterface, &relation); err != nil {
+	err := interface2Struct(relationInterface, &relation)
+	if err != nil {
 		// probably fine
 		return false
 	}
@@ -475,6 +490,7 @@ func (b *Bmatrix) handleReply(ev *matrix.Event, rmsg config.Message) bool {
 	}
 
 	rmsg.Text = body
+
 	rmsg.ParentID = relation.InReplyTo.EventID
 	b.Remote <- rmsg
 
@@ -492,10 +508,12 @@ func (b *Bmatrix) handleMemberChange(ev *matrix.Event) {
 
 func (b *Bmatrix) handleEvent(ev *matrix.Event) {
 	b.Log.Debugf("== Receiving event: %#v", ev)
+
 	if ev.Sender != b.UserID {
 		b.RLock()
 		channel, ok := b.RoomMap[ev.RoomID]
 		b.RUnlock()
+
 		if !ok {
 			b.Log.Debugf("Unknown room %s", ev.RoomID)
 			return
@@ -521,8 +539,10 @@ func (b *Bmatrix) handleEvent(ev *matrix.Event) {
 		if ev.Type == "m.room.redaction" {
 			rmsg.Event = config.EventMsgDelete
 			rmsg.ID = ev.Redacts
+
 			rmsg.Text = config.EventMsgDelete
 			b.Remote <- rmsg
+
 			return
 		}
 
@@ -530,6 +550,7 @@ func (b *Bmatrix) handleEvent(ev *matrix.Event) {
 		if rmsg.Text, ok = ev.Content["body"].(string); !ok {
 			b.Log.Errorf("Content[body] is not a string: %T\n%#v",
 				ev.Content["body"], ev.Content)
+
 			return
 		}
 
@@ -557,10 +578,12 @@ func (b *Bmatrix) handleEvent(ev *matrix.Event) {
 		}
 
 		b.Log.Debugf("<= Sending message from %s on %s to gateway", ev.Sender, b.Account)
+
 		b.Remote <- rmsg
 
 		// not crucial, so no ratelimit check here
-		if err := b.mc.MarkRead(ev.RoomID, ev.ID); err != nil {
+		err := b.mc.MarkRead(ev.RoomID, ev.ID)
+		if err != nil {
 			b.Log.Errorf("couldn't mark message as read %s", err.Error())
 		}
 	}
@@ -580,20 +603,24 @@ func (b *Bmatrix) handleDownloadFile(rmsg *config.Message, content map[string]in
 		return fmt.Errorf("url isn't a %T", url)
 	}
 	// https://github.com/matrix-org/matrix-spec-proposals/blob/main/proposals/3916-authentication-for-media.md
-	url = strings.Replace(url, "mxc://", b.GetString("Server")+"/_matrix/client/v1/media/download/", -1)
+	url = strings.ReplaceAll(url, "mxc://", b.GetString("Server")+"/_matrix/client/v1/media/download/")
 
 	if info, ok = content["info"].(map[string]interface{}); !ok {
 		return fmt.Errorf("info isn't a %T", info)
 	}
+
 	if size, ok = info["size"].(float64); !ok {
 		return fmt.Errorf("size isn't a %T", size)
 	}
+
 	if name, ok = content["body"].(string); !ok {
 		return fmt.Errorf("name isn't a %T", name)
 	}
+
 	if msgtype, ok = content["msgtype"].(string); !ok {
 		return fmt.Errorf("msgtype isn't a %T", msgtype)
 	}
+
 	if mtype, ok = info["mimetype"].(string); !ok {
 		return fmt.Errorf("mtype isn't a %T", mtype)
 	}
@@ -623,6 +650,7 @@ func (b *Bmatrix) handleDownloadFile(rmsg *config.Message, content map[string]in
 	}
 	// add the downloaded data to the message
 	helper.HandleDownloadData(b.Log, rmsg, name, "", url, data, b.General)
+
 	return nil
 }
 
@@ -633,6 +661,7 @@ func (b *Bmatrix) handleUploadFiles(msg *config.Message, channel string) (string
 			b.handleUploadFile(msg, channel, &fi)
 		}
 	}
+
 	return "", nil
 }
 
@@ -661,7 +690,6 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 
 		return err
 	})
-
 	if err != nil {
 		b.Log.Errorf("file upload failed: %#v", err)
 		return
@@ -670,6 +698,7 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 	switch {
 	case strings.Contains(mtype, "video"):
 		b.Log.Debugf("sendVideo %s", res.ContentURI)
+
 		err = b.retry(func() error {
 			_, err = b.mc.SendVideo(channel, fi.Name, res.ContentURI)
 
@@ -680,6 +709,7 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 		}
 	case strings.Contains(mtype, "image"):
 		b.Log.Debugf("sendImage %s", res.ContentURI)
+
 		cfg, format, _ := image.DecodeConfig(bytes.NewReader(*fi.Data)) // optional prüfen
 
 		b.Log.Debugf("Image format detected: %s (%dx%d)", format, cfg.Width, cfg.Height)
@@ -695,6 +725,7 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 				Height:   uint(cfg.Height),
 			},
 		}
+
 		err = b.retry(func() error {
 			_, err = b.mc.SendMessageEvent(channel, "m.room.message", img)
 			return err
@@ -704,6 +735,7 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 		}
 	case strings.Contains(mtype, "audio"):
 		b.Log.Debugf("sendAudio %s", res.ContentURI)
+
 		err = b.retry(func() error {
 			_, err = b.mc.SendMessageEvent(channel, "m.room.message", matrix.AudioMessage{
 				MsgType: "m.audio",
@@ -722,6 +754,7 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 		}
 	default:
 		b.Log.Debugf("sendFile %s", res.ContentURI)
+
 		err = b.retry(func() error {
 			_, err = b.mc.SendMessageEvent(channel, "m.room.message", matrix.FileMessage{
 				MsgType: "m.file",
@@ -739,5 +772,6 @@ func (b *Bmatrix) handleUploadFile(msg *config.Message, channel string, fi *conf
 			b.Log.Errorf("sendFile failed: %#v", err)
 		}
 	}
+
 	b.Log.Debugf("result: %#v", res)
 }

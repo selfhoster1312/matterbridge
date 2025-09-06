@@ -40,13 +40,16 @@ func (b *Bmsteams) Connect() error {
 	if tokenCachePath == "" {
 		tokenCachePath = "msteams_session.json"
 	}
+
 	ctx := context.Background()
 	m := msauth.NewManager()
 	m.LoadFile(tokenCachePath) //nolint:errcheck
+
 	ts, err := m.DeviceAuthorizationGrant(ctx, b.GetString("TenantID"), b.GetString("ClientID"), defaultScopes, nil)
 	if err != nil {
 		return err
 	}
+
 	err = m.SaveFile(tokenCachePath)
 	if err != nil {
 		b.Log.Errorf("Couldn't save sessionfile in %s: %s", tokenCachePath, err)
@@ -56,6 +59,7 @@ func (b *Bmsteams) Connect() error {
 	if err != nil {
 		b.Log.Errorf("Couldn't change permissions for %s: %s", tokenCachePath, err)
 	}
+
 	httpClient := oauth2.NewClient(ctx, ts)
 	graphClient := msgraph.NewClient(httpClient)
 	b.gc = graphClient
@@ -65,7 +69,9 @@ func (b *Bmsteams) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	b.Log.Info("Connection succeeded")
+
 	return nil
 }
 
@@ -80,14 +86,17 @@ func (b *Bmsteams) JoinChannel(channel config.ChannelInfo) error {
 			if err != nil {
 				b.Log.Errorf("polling failed for %s: %s. retrying in 5 seconds", name, err)
 			}
+
 			time.Sleep(time.Second * 5)
 		}
 	}(channel.Name)
+
 	return nil
 }
 
 func (b *Bmsteams) Send(msg config.Message) (string, error) {
 	b.Log.Debugf("=> Receiving %#v", msg)
+
 	if msg.ParentValid() {
 		return b.sendReply(msg)
 	}
@@ -95,17 +104,19 @@ func (b *Bmsteams) Send(msg config.Message) (string, error) {
 	// Handle prefix hint for unthreaded messages.
 	if msg.ParentNotFound() {
 		msg.ParentID = ""
-		msg.Text = fmt.Sprintf("[thread]: %s", msg.Text)
+		msg.Text = "[thread]: " + msg.Text
 	}
 
 	ct := b.gc.Teams().ID(b.GetString("TeamID")).Channels().ID(msg.Channel).Messages().Request()
 	text := msg.Username + msg.Text
 	content := &msgraph.ItemBody{Content: &text}
 	rmsg := &msgraph.ChatMessage{Body: content}
+
 	res, err := ct.Add(b.ctx, rmsg)
 	if err != nil {
 		return "", err
 	}
+
 	return *res.ID, nil
 }
 
@@ -116,51 +127,63 @@ func (b *Bmsteams) sendReply(msg config.Message) (string, error) {
 	text := msg.Username + msg.Text
 	content := &msgraph.ItemBody{Content: &text}
 	rmsg := &msgraph.ChatMessage{Body: content}
+
 	res, err := ct.Add(b.ctx, rmsg)
 	if err != nil {
 		return "", err
 	}
+
 	return *res.ID, nil
 }
 
 func (b *Bmsteams) getMessages(channel string) ([]msgraph.ChatMessage, error) {
 	ct := b.gc.Teams().ID(b.GetString("TeamID")).Channels().ID(channel).Messages().Request()
+
 	rct, err := ct.Get(b.ctx)
 	if err != nil {
 		return nil, err
 	}
+
 	b.Log.Debugf("got %#v messages", len(rct))
+
 	return rct, nil
 }
 
 //nolint:gocognit
 func (b *Bmsteams) poll(channelName string) error {
 	msgmap := make(map[string]time.Time)
+
 	b.Log.Debug("getting initial messages")
+
 	res, err := b.getMessages(channelName)
 	if err != nil {
 		return err
 	}
+
 	for _, msg := range res {
 		msgmap[*msg.ID] = *msg.CreatedDateTime
 		if msg.LastModifiedDateTime != nil {
 			msgmap[*msg.ID] = *msg.LastModifiedDateTime
 		}
 	}
+
 	time.Sleep(time.Second * 5)
 	b.Log.Debug("polling for messages")
+
 	for {
 		res, err := b.getMessages(channelName)
 		if err != nil {
 			return err
 		}
+
 		for i := len(res) - 1; i >= 0; i-- {
 			msg := res[i]
 			if mtime, ok := msgmap[*msg.ID]; ok {
-				if mtime == *msg.CreatedDateTime && msg.LastModifiedDateTime == nil {
+				if mtime.Equal(*msg.CreatedDateTime) && msg.LastModifiedDateTime == nil {
 					continue
 				}
-				if msg.LastModifiedDateTime != nil && mtime == *msg.LastModifiedDateTime {
+
+				if msg.LastModifiedDateTime != nil && mtime.Equal(*msg.LastModifiedDateTime) {
 					continue
 				}
 			}
@@ -176,7 +199,9 @@ func (b *Bmsteams) poll(channelName string) error {
 
 			if *msg.From.User.ID == b.botID {
 				b.Log.Debug("skipping own message")
+
 				msgmap[*msg.ID] = *msg.CreatedDateTime
+
 				continue
 			}
 
@@ -184,6 +209,7 @@ func (b *Bmsteams) poll(channelName string) error {
 			if msg.LastModifiedDateTime != nil {
 				msgmap[*msg.ID] = *msg.LastModifiedDateTime
 			}
+
 			b.Log.Debugf("<= Sending message from %s on %s to gateway", *msg.From.User.DisplayName, b.Account)
 			text := b.convertToMD(*msg.Body.Content)
 			rmsg := config.Message{
@@ -199,19 +225,24 @@ func (b *Bmsteams) poll(channelName string) error {
 
 			b.handleAttachments(&rmsg, msg)
 			b.Log.Debugf("<= Message is %#v", rmsg)
+
 			b.Remote <- rmsg
 		}
+
 		time.Sleep(time.Second * 5)
 	}
 }
 
 func (b *Bmsteams) setBotID() error {
 	req := b.gc.Me().Request()
+
 	r, err := req.Get(b.ctx)
 	if err != nil {
 		return err
 	}
+
 	b.botID = *r.ID
+
 	return nil
 }
 
@@ -219,11 +250,14 @@ func (b *Bmsteams) convertToMD(text string) string {
 	if !strings.Contains(text, "<div>") {
 		return text
 	}
+
 	var sb strings.Builder
+
 	err := godown.Convert(&sb, strings.NewReader(text), nil)
 	if err != nil {
 		b.Log.Errorf("Couldn't convert message to markdown %s", text)
 		return text
 	}
+
 	return sb.String()
 }

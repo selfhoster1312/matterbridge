@@ -262,29 +262,35 @@ func NewConfig(rootLogger *logrus.Logger, cfgfile string) Config {
 	logger := rootLogger.WithFields(logrus.Fields{"prefix": "config"})
 
 	viper.SetConfigFile(cfgfile)
+
 	input, err := ioutil.ReadFile(cfgfile)
 	if err != nil {
 		logger.Fatalf("Failed to read configuration file: %#v", err)
 	}
 
 	cfgtype := detectConfigType(cfgfile)
+
 	mycfg := newConfigFromString(logger, input, cfgtype)
 	if mycfg.cv.General.LogFile != "" {
 		logfile, err := os.OpenFile(mycfg.cv.General.LogFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 		if err == nil {
 			logger.Info("Opening log file ", mycfg.cv.General.LogFile)
+
 			rootLogger.Out = logfile
 		} else {
 			logger.Warn("Failed to open ", mycfg.cv.General.LogFile)
 		}
 	}
+
 	if mycfg.cv.General.MediaDownloadSize == 0 {
 		mycfg.cv.General.MediaDownloadSize = 1000000
 	}
+
 	viper.WatchConfig()
 	viper.OnConfigChange(func(e fsnotify.Event) {
 		logger.Println("Config file changed:", e.Name)
 	})
+
 	return mycfg
 }
 
@@ -297,6 +303,7 @@ func detectConfigType(cfgfile string) string {
 	case ".yaml", ".yml":
 		return "yaml"
 	}
+
 	return "toml"
 }
 
@@ -312,14 +319,17 @@ func newConfigFromString(logger *logrus.Entry, input []byte, cfgtype string) *co
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_", "-", "_"))
 	viper.AutomaticEnv()
 
-	if err := viper.ReadConfig(bytes.NewBuffer(input)); err != nil {
+	err := viper.ReadConfig(bytes.NewBuffer(input))
+	if err != nil {
 		logger.Fatalf("Failed to parse the configuration: %s", err)
 	}
 
 	cfg := &BridgeValues{}
-	if err := viper.Unmarshal(cfg); err != nil {
+	err := viper.Unmarshal(cfg)
+	if err != nil {
 		logger.Fatalf("Failed to load the configuration: %s", err)
 	}
+
 	return &config{
 		logger: logger,
 		v:      viper.GetViper(),
@@ -338,30 +348,35 @@ func (c *config) Viper() *viper.Viper {
 func (c *config) IsKeySet(key string) bool {
 	c.RLock()
 	defer c.RUnlock()
+
 	return c.v.IsSet(key)
 }
 
 func (c *config) GetBool(key string) (bool, bool) {
 	c.RLock()
 	defer c.RUnlock()
+
 	return c.v.GetBool(key), c.v.IsSet(key)
 }
 
 func (c *config) GetInt(key string) (int, bool) {
 	c.RLock()
 	defer c.RUnlock()
+
 	return c.v.GetInt(key), c.v.IsSet(key)
 }
 
 func (c *config) GetString(key string) (string, bool) {
 	c.RLock()
 	defer c.RUnlock()
+
 	return c.v.GetString(key), c.v.IsSet(key)
 }
 
 func (c *config) GetStringSlice(key string) ([]string, bool) {
 	c.RLock()
 	defer c.RUnlock()
+
 	return c.v.GetStringSlice(key), c.v.IsSet(key)
 }
 
@@ -373,14 +388,17 @@ func (c *config) GetStringSlice2D(key string) ([][]string, bool) {
 	if !ok {
 		return nil, false
 	}
+
 	var result [][]string
 	for _, entry := range res {
 		result2 := []string{}
 		for _, entry2 := range entry.([]interface{}) {
 			result2 = append(result2, entry2.(string))
 		}
+
 		result = append(result, result2)
 	}
+
 	return result, true
 }
 
@@ -388,9 +406,10 @@ func GetIconURL(msg *Message, iconURL string) string {
 	info := strings.Split(msg.Account, ".")
 	protocol := info[0]
 	name := info[1]
-	iconURL = strings.Replace(iconURL, "{NICK}", msg.Username, -1)
-	iconURL = strings.Replace(iconURL, "{BRIDGE}", name, -1)
-	iconURL = strings.Replace(iconURL, "{PROTOCOL}", protocol, -1)
+	iconURL = strings.ReplaceAll(iconURL, "{NICK}", msg.Username)
+	iconURL = strings.ReplaceAll(iconURL, "{BRIDGE}", name)
+	iconURL = strings.ReplaceAll(iconURL, "{PROTOCOL}", protocol)
+
 	return iconURL
 }
 
@@ -410,6 +429,7 @@ func (c *TestConfig) GetBool(key string) (bool, bool) {
 	if ok {
 		return val.(bool), true
 	}
+
 	return c.Config.GetBool(key)
 }
 
@@ -417,6 +437,7 @@ func (c *TestConfig) GetInt(key string) (int, bool) {
 	if val, ok := c.Overrides[key]; ok {
 		return val.(int), true
 	}
+
 	return c.Config.GetInt(key)
 }
 
@@ -424,6 +445,7 @@ func (c *TestConfig) GetString(key string) (string, bool) {
 	if val, ok := c.Overrides[key]; ok {
 		return val.(string), true
 	}
+
 	return c.Config.GetString(key)
 }
 
@@ -431,6 +453,7 @@ func (c *TestConfig) GetStringSlice(key string) ([]string, bool) {
 	if val, ok := c.Overrides[key]; ok {
 		return val.([]string), true
 	}
+
 	return c.Config.GetStringSlice(key)
 }
 
@@ -438,5 +461,6 @@ func (c *TestConfig) GetStringSlice2D(key string) ([][]string, bool) {
 	if val, ok := c.Overrides[key]; ok {
 		return val.([][]string), true
 	}
+
 	return c.Config.GetStringSlice2D(key)
 }

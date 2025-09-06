@@ -1,3 +1,4 @@
+//go:build !noirc
 // +build !noirc
 
 package bridgemap

@@ -31,6 +31,7 @@ func newMatrixUsername(username string) *matrixUsername {
 func (b *Bmatrix) getRoomID(channel string) string {
 	b.RLock()
 	defer b.RUnlock()
+
 	for ID, name := range b.RoomMap {
 		if name == channel {
 			return ID
@@ -58,14 +59,17 @@ func (b *Bmatrix) getDisplayName(mxid string) string {
 	}
 
 	b.RLock()
+
 	if val, present := b.NicknameMap[mxid]; present {
 		b.RUnlock()
 
 		return val.displayName
 	}
+
 	b.RUnlock()
 
 	displayName, err := b.mc.GetDisplayName(mxid)
+
 	var httpError *matrix.HTTPError
 	if errors.As(err, &httpError) {
 		b.Log.Warnf("Couldn't retrieve the display name for %s", mxid)
@@ -89,6 +93,7 @@ func (b *Bmatrix) cacheDisplayName(mxid string, displayName string) string {
 	conflict := false
 
 	b.Lock()
+
 	for mxid, v := range b.NicknameMap {
 		// to prevent username reuse across matrix servers - or even on the same server, append
 		// the mxid to the username when there is a conflict
@@ -149,9 +154,9 @@ func (b *Bmatrix) containsAttachment(content map[string]interface{}) bool {
 	}
 
 	// Only allow image,video or file msgtypes
-	if !(content["msgtype"].(string) == "m.image" ||
-		content["msgtype"].(string) == "m.video" ||
-		content["msgtype"].(string) == "m.file") {
+	if content["msgtype"].(string) != "m.image" &&
+		content["msgtype"].(string) != "m.video" &&
+		content["msgtype"].(string) != "m.file" {
 		return false
 	}
 
@@ -201,7 +206,8 @@ func (b *Bmatrix) retry(f func() error) error {
 	defer b.rateMutex.Unlock()
 
 	for {
-		if err := f(); err != nil {
+		err := f()
+		if err != nil {
 			if backoff, ok := b.handleRatelimit(err); ok {
 				time.Sleep(backoff)
 			} else {

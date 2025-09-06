@@ -47,16 +47,20 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	b.running = make(chan error)
 	b.connected = make(chan gumble.DisconnectEvent)
 	b.serverConfigUpdate = make(chan gumble.ServerConfigEvent)
+
 	return b
 }
 
 func (b *Bmumble) Connect() error {
 	b.Log.Infof("Connecting %s", b.GetString("Server"))
+
 	host, portstr, err := net.SplitHostPort(b.GetString("Server"))
 	if err != nil {
 		return err
 	}
+
 	b.Host = host
+
 	_, err = strconv.Atoi(portstr)
 	if err != nil {
 		return err
@@ -68,7 +72,9 @@ func (b *Bmumble) Connect() error {
 
 	go b.doSend()
 	go b.connectLoop()
+
 	err = <-b.running
+
 	return err
 }
 
@@ -81,27 +87,33 @@ func (b *Bmumble) JoinChannel(channel config.ChannelInfo) error {
 	if err != nil {
 		return err
 	}
+
 	channelID := uint32(cid)
 	if b.Channel != nil && *b.Channel != channelID {
 		b.Log.Fatalf("Cannot join channel ID '%d', already joined to channel ID %d", channelID, *b.Channel)
 		return errors.New("the Mumble bridge can only join a single channel")
 	}
+
 	b.Channel = &channelID
+
 	return b.doJoin(b.client, channelID)
 }
 
 func (b *Bmumble) Send(msg config.Message) (string, error) {
 	// Only process text messages
 	b.Log.Debugf("=> Received local message %#v", msg)
+
 	if msg.Event != "" && msg.Event != config.EventUserAction && msg.Event != config.EventJoinLeave {
 		return "", nil
 	}
 
 	attachments := b.extractFiles(&msg)
 	b.local <- msg
+
 	for _, a := range attachments {
 		b.local <- a
 	}
+
 	return "", nil
 }
 
@@ -114,6 +126,7 @@ func (b *Bmumble) buildTLSConfig() error {
 			if err != nil {
 				return err
 			}
+
 			b.tlsConfig.Certificates = []tls.Certificate{cert}
 		}
 	}
@@ -123,31 +136,40 @@ func (b *Bmumble) buildTLSConfig() error {
 		if err != nil {
 			return err
 		}
+
 		b.tlsConfig.RootCAs = x509.NewCertPool()
 		b.tlsConfig.RootCAs.AppendCertsFromPEM(ca)
 	}
+
 	b.tlsConfig.InsecureSkipVerify = b.GetBool("SkipTLSVerify")
+
 	return nil
 }
 
 func (b *Bmumble) connectLoop() {
 	firstConnect := true
+
 	for {
 		err := b.doConnect()
 		if firstConnect {
 			b.running <- err
 		}
+
 		if err != nil {
 			b.Log.Errorf("Connection to server failed: %#v", err)
+
 			if firstConnect {
 				break
 			} else {
 				b.Log.Info("Retrying in 10s")
 				time.Sleep(10 * time.Second)
+
 				continue
 			}
 		}
+
 		firstConnect = false
+
 		d := <-b.connected
 		switch d.Type {
 		case gumble.DisconnectError:
@@ -160,11 +182,13 @@ func (b *Bmumble) connectLoop() {
 			b.Log.Errorf("Banned from the server (%s), not attempting reconnect", d.String)
 			close(b.connected)
 			close(b.running)
+
 			return
 		case gumble.DisconnectUser:
 			b.Log.Infof("Disconnect successful")
 			close(b.connected)
 			close(b.running)
+
 			return
 		}
 	}
@@ -180,17 +204,21 @@ func (b *Bmumble) doConnect() error {
 		Disconnect:   b.handleDisconnect,
 		UserChange:   b.handleUserChange,
 	})
+
 	gumbleConfig.Username = b.GetString("Nick")
 	if password := b.GetString("Password"); password != "" {
 		gumbleConfig.Password = password
 	}
 
 	registerNullCodecAsOpus()
+
 	client, err := gumble.DialWithDialer(new(net.Dialer), b.GetString("Server"), gumbleConfig, &b.tlsConfig)
 	if err != nil {
 		return err
 	}
+
 	b.client = client
+
 	return nil
 }
 
@@ -199,7 +227,9 @@ func (b *Bmumble) doJoin(client *gumble.Client, channelID uint32) error {
 	if !ok {
 		return fmt.Errorf("no channel with ID %d", channelID)
 	}
+
 	client.Self.Move(channel)
+
 	return nil
 }
 
@@ -233,6 +263,7 @@ func (b *Bmumble) processMessage(msg *config.Message) {
 		} else {
 			b.Log.Info("Can't send image, server does not allow HTML messages")
 		}
+
 		return
 	}
 
@@ -249,6 +280,7 @@ func (b *Bmumble) processMessage(msg *config.Message) {
 
 	// If there is a maximum message length, split and truncate the lines
 	var msgLines []string
+
 	if maxLength := b.serverConfig.MaximumMessageLength; maxLength != nil {
 		if *maxLength != 0 { // Some servers will have unlimited message lengths.
 			// Not doing this makes underflows happen.

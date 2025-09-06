@@ -17,11 +17,13 @@ func (b *Bdiscord) shouldMessageUseWebhooks(msg *config.Message) bool {
 
 	b.channelsMutex.RLock()
 	defer b.channelsMutex.RUnlock()
+
 	if ci, ok := b.channelInfoMap[msg.Channel+b.Account]; ok {
 		if ci.Options.WebhookURL != "" {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -40,12 +42,14 @@ func (b *Bdiscord) maybeGetLocalAvatar(msg *config.Message) string {
 
 		return member.User.AvatarURL("")
 	}
+
 	return ""
 }
 
 func (b *Bdiscord) webhookSendTextOnly(msg *config.Message, channelID string) (string, error) {
 	msgParts := helper.ClipOrSplitMessage(msg.Text, MessageLength, b.GetString("MessageClipped"), b.GetInt("MessageSplitMaxCount"))
 	msgIds := []string{}
+
 	for _, msgPart := range msgParts {
 		res, err := b.transmitter.Send(
 			channelID,
@@ -93,6 +97,7 @@ func (b *Bdiscord) webhookSendFilesOnly(msg *config.Message, channelID string) e
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -144,11 +149,14 @@ func (b *Bdiscord) handleEventWebhook(msg *config.Message, channelID string) (st
 	if msg.ID != "" {
 		// Exploit that a discord message ID is actually just a large number, and we encode a list of IDs by separating them with ";".
 		msgIds := strings.Split(msg.ID, ";")
+
 		msgParts := helper.ClipOrSplitMessage(b.replaceUserMentions(msg.Text), MessageLength, b.GetString("MessageClipped"), len(msgIds))
 		for len(msgParts) < len(msgIds) {
 			msgParts = append(msgParts, "((obsoleted by edit))")
 		}
+
 		b.Log.Debugf("Editing webhook message")
+
 		var editErr error = nil
 		for i := range msgParts {
 			// In case of split-messages where some parts remain the same (i.e. only a typo-fix in a huge message), this causes some noop-updates.
@@ -162,18 +170,22 @@ func (b *Bdiscord) handleEventWebhook(msg *config.Message, channelID string) (st
 				break
 			}
 		}
+
 		if editErr == nil {
 			return msg.ID, nil
 		}
+
 		b.Log.Errorf("Could not edit webhook message(s): %s; sending as new message(s) instead", editErr)
 	}
 
 	b.Log.Debugf("Processing webhook sending for message %#v", msg)
 	msg.Text = b.replaceUserMentions(msg.Text)
+
 	msgID, err := b.webhookSend(msg, channelID)
 	if err != nil {
 		b.Log.Errorf("Could not broadcast via webhook for message %#v: %s", msgID, err)
 		return "", err
 	}
+
 	return msgID, nil
 }

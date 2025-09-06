@@ -48,6 +48,7 @@ func (b *Bvk) Connect() error {
 	b.c = api.NewVK(b.GetString("Token"))
 
 	var err error
+
 	b.lp, err = longpoll.NewLongPollCommunity(b.c)
 	if err != nil {
 		b.Log.Debugf("%#v", err)
@@ -213,6 +214,7 @@ func (b *Bvk) handleMessage(msg object.MessagesMessage, isFwd bool) {
 
 func (b *Bvk) uploadFiles(extra map[string][]interface{}, peerID int) (string, string) {
 	var attachments []string
+
 	text := ""
 
 	for _, f := range extra["file"] {
@@ -221,6 +223,7 @@ func (b *Bvk) uploadFiles(extra map[string][]interface{}, peerID int) (string, s
 		if fi.Comment != "" {
 			text += fi.Comment + "\n"
 		}
+
 		a, err := b.uploadFile(fi, peerID)
 		if err != nil {
 			b.Log.WithError(err).Error("File upload error ", fi.Name)
@@ -269,13 +272,16 @@ func (b *Bvk) uploadFile(file config.FileInfo, peerID int) (string, error) {
 }
 
 func (b *Bvk) getFiles(attachments []object.MessagesMessageAttachment) ([]string, string) {
-	var urls []string
-	var text []string
+	var (
+		urls []string
+		text []string
+	)
 
 	for _, a := range attachments {
 		switch a.Type {
 		case photo:
 			var resolution float64 = 0
+
 			url := a.Photo.Sizes[0].URL
 			for _, size := range a.Photo.Sizes {
 				r := size.Height * size.Width
@@ -294,10 +300,11 @@ func (b *Bvk) getFiles(attachments []object.MessagesMessageAttachment) ([]string
 			urls = append(urls, a.Graffiti.URL)
 
 		case audioMessage:
-			urls = append(urls, a.AudioMessage.DocsDocPreviewAudioMessage.LinkOgg)
+			urls = append(urls, a.AudioMessage.LinkOgg)
 
 		case sticker:
 			var resolution float64 = 0
+
 			url := a.Sticker.Images[0].URL
 			for _, size := range a.Sticker.Images {
 				r := size.Height * size.Width
@@ -306,6 +313,7 @@ func (b *Bvk) getFiles(attachments []object.MessagesMessageAttachment) ([]string
 					url = size.URL
 				}
 			}
+
 			urls = append(urls, url+".png")
 		case video:
 			text = append(text, "https://vk.com/video"+strconv.Itoa(a.Video.OwnerID)+"_"+strconv.Itoa(a.Video.ID))

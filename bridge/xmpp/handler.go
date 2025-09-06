@@ -27,8 +27,10 @@ func (b *Bxmpp) handleDownloadAvatar(avatar xmpp.AvatarData) {
 			b.Log.Error(err)
 			return
 		}
+
 		helper.HandleDownloadData(b.Log, &rmsg, avatar.From+".png", rmsg.Text, "", &avatar.Data, b.General)
 		b.Log.Debugf("Avatar download complete")
+
 		b.Remote <- rmsg
 	}
 }

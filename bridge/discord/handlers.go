@@ -8,25 +8,28 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func (b *Bdiscord) messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) { //nolint:unparam
+func (b *Bdiscord) messageDelete(s *discordgo.Session, m *discordgo.MessageDelete) {
 	if m.GuildID != b.guildID {
 		b.Log.Debugf("Ignoring messageDelete because it originates from a different guild")
 		return
 	}
+
 	rmsg := config.Message{Account: b.Account, ID: m.ID, Event: config.EventMsgDelete, Text: config.EventMsgDelete}
 	rmsg.Channel = b.getChannelName(m.ChannelID)
 
 	b.Log.Debugf("<= Sending message from %s to gateway", b.Account)
 	b.Log.Debugf("<= Message is %#v", rmsg)
+
 	b.Remote <- rmsg
 }
 
 // TODO(qaisjp): if other bridges support bulk deletions, it could be fanned out centrally
-func (b *Bdiscord) messageDeleteBulk(s *discordgo.Session, m *discordgo.MessageDeleteBulk) { //nolint:unparam
+func (b *Bdiscord) messageDeleteBulk(s *discordgo.Session, m *discordgo.MessageDeleteBulk) {
 	if m.GuildID != b.guildID {
 		b.Log.Debugf("Ignoring messageDeleteBulk because it originates from a different guild")
 		return
 	}
+
 	for _, msgID := range m.Messages {
 		rmsg := config.Message{
 			Account: b.Account,
@@ -38,6 +41,7 @@ func (b *Bdiscord) messageDeleteBulk(s *discordgo.Session, m *discordgo.MessageD
 
 		b.Log.Debugf("<= Sending message from %s to gateway", b.Account)
 		b.Log.Debugf("<= Message is %#v", rmsg)
+
 		b.Remote <- rmsg
 	}
 }
@@ -51,6 +55,7 @@ func (b *Bdiscord) messageTyping(s *discordgo.Session, m *discordgo.TypingStart)
 		b.Log.Debugf("Ignoring messageTyping because it originates from a different guild")
 		return
 	}
+
 	if !b.GetBool("ShowUserTyping") {
 		return
 	}
@@ -61,20 +66,22 @@ func (b *Bdiscord) messageTyping(s *discordgo.Session, m *discordgo.TypingStart)
 	}
 
 	rmsg := config.Message{Account: b.Account, Event: config.EventUserTyping}
+
 	rmsg.Channel = b.getChannelName(m.ChannelID)
 	b.Remote <- rmsg
 }
 
-func (b *Bdiscord) messageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) { //nolint:unparam
+func (b *Bdiscord) messageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	if m.GuildID != b.guildID {
 		b.Log.Debugf("Ignoring messageUpdate because it originates from a different guild")
 		return
 	}
+
 	if b.GetBool("EditDisable") {
 		return
 	}
 	// only when message is actually edited
-	if m.Message.EditedTimestamp != nil {
+	if m.EditedTimestamp != nil {
 		b.Log.Debugf("Sending edit message")
 		m.Content += b.GetString("EditSuffix")
 		msg := &discordgo.MessageCreate{
@@ -88,10 +95,13 @@ func (b *Bdiscord) handleQuote(s *discordgo.Session, m *discordgo.Message, msg s
 	if b.GetBool("QuoteDisable") {
 		return msg
 	}
+
 	if m.MessageReference == nil {
 		return msg
 	}
+
 	refMsgRef := m.MessageReference
+
 	refMsg, err := s.ChannelMessage(refMsgRef.ChannelID, refMsgRef.MessageID)
 	if err != nil {
 		b.Log.Errorf("Error getting quoted message %s:%s: %s", refMsgRef.ChannelID, refMsgRef.MessageID, err)
@@ -100,6 +110,7 @@ func (b *Bdiscord) handleQuote(s *discordgo.Session, m *discordgo.Message, msg s
 
 	quoteMessage := refMsg.Content
 	quoteNick := refMsg.Author.Username
+
 	fromWebhook := m.WebhookID != ""
 	if !fromWebhook && b.GetBool("UseDiscriminator") {
 		quoteNick += "#" + refMsg.Author.Discriminator
@@ -109,25 +120,30 @@ func (b *Bdiscord) handleQuote(s *discordgo.Session, m *discordgo.Message, msg s
 	if format == "" {
 		format = "{MESSAGE} (re @{QUOTENICK}: {QUOTEMESSAGE})"
 	}
+
 	quoteMessagelength := len([]rune(quoteMessage))
 	if b.GetInt("QuoteLengthLimit") != 0 && quoteMessagelength >= b.GetInt("QuoteLengthLimit") {
 		runes := []rune(quoteMessage)
+
 		quoteMessage = string(runes[0:b.GetInt("QuoteLengthLimit")])
 		if quoteMessagelength > b.GetInt("QuoteLengthLimit") {
 			quoteMessage += "..."
 		}
 	}
+
 	format = strings.ReplaceAll(format, "{MESSAGE}", m.Content)
 	format = strings.ReplaceAll(format, "{QUOTENICK}", quoteNick)
 	format = strings.ReplaceAll(format, "{QUOTEMESSAGE}", quoteMessage)
+
 	return format
 }
 
-func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) { //nolint:unparam
+func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.GuildID != b.guildID {
 		b.Log.Debugf("Ignoring messageCreate because it originates from a different guild")
 		return
 	}
+
 	var err error
 
 	// not relay our own messages
@@ -151,10 +167,12 @@ func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreat
 	b.Log.Debugf("== Receiving event %#v", m.Message)
 
 	if m.Content != "" {
-		m.Message.Content = b.replaceChannelMentions(m.Message.Content)
+		m.Content = b.replaceChannelMentions(m.Content)
+
 		rmsg.Text, err = m.ContentWithMoreMentionsReplaced(b.c)
 		if err != nil {
 			b.Log.Errorf("ContentWithMoreMentionsReplaced failed: %s", err)
+
 			rmsg.Text = m.ContentWithMentionsReplaced()
 		}
 	}
@@ -173,8 +191,8 @@ func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreat
 	}
 
 	// if we have embedded content add it to text
-	if b.GetBool("ShowEmbeds") && m.Message.Embeds != nil {
-		for _, embed := range m.Message.Embeds {
+	if b.GetBool("ShowEmbeds") && m.Embeds != nil {
+		for _, embed := range m.Embeds {
 			rmsg.Text += handleEmbed(embed)
 		}
 	}
@@ -186,6 +204,7 @@ func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreat
 
 	// do we have a /me action
 	var ok bool
+
 	rmsg.Text, ok = b.replaceAction(rmsg.Text)
 	if ok {
 		rmsg.Event = config.EventUserAction
@@ -204,6 +223,7 @@ func (b *Bdiscord) messageCreate(s *discordgo.Session, m *discordgo.MessageCreat
 
 	b.Log.Debugf("<= Sending message from %s on %s to gateway", m.Author.Username, b.Account)
 	b.Log.Debugf("<= Message is %#v", rmsg)
+
 	b.Remote <- rmsg
 }
 
@@ -212,6 +232,7 @@ func (b *Bdiscord) memberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUp
 		b.Log.Debugf("Ignoring memberUpdate because it originates from a different guild")
 		return
 	}
+
 	if m.Member == nil {
 		b.Log.Warnf("Received member update with no member information: %#v", m)
 	}
@@ -219,22 +240,24 @@ func (b *Bdiscord) memberUpdate(s *discordgo.Session, m *discordgo.GuildMemberUp
 	b.membersMutex.Lock()
 	defer b.membersMutex.Unlock()
 
-	if currMember, ok := b.userMemberMap[m.Member.User.ID]; ok {
+	if currMember, ok := b.userMemberMap[m.User.ID]; ok {
 		b.Log.Debugf(
 			"%s: memberupdate: user %s (nick %s) changes nick to %s",
 			b.Account,
-			m.Member.User.Username,
+			m.User.Username,
 			b.userMemberMap[m.Member.User.ID].Nick,
-			m.Member.Nick,
+			m.Nick,
 		)
 		delete(b.nickMemberMap, currMember.User.Username)
 		delete(b.nickMemberMap, currMember.Nick)
-		delete(b.userMemberMap, m.Member.User.ID)
+		delete(b.userMemberMap, m.User.ID)
 	}
-	b.userMemberMap[m.Member.User.ID] = m.Member
-	b.nickMemberMap[m.Member.User.Username] = m.Member
-	if m.Member.Nick != "" {
-		b.nickMemberMap[m.Member.Nick] = m.Member
+
+	b.userMemberMap[m.User.ID] = m.Member
+
+	b.nickMemberMap[m.User.Username] = m.Member
+	if m.Nick != "" {
+		b.nickMemberMap[m.Nick] = m.Member
 	}
 }
 
@@ -243,16 +266,19 @@ func (b *Bdiscord) memberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) 
 		b.Log.Debugf("Ignoring memberAdd because it originates from a different guild")
 		return
 	}
+
 	if b.GetBool("nosendjoinpart") {
 		return
 	}
+
 	if m.Member == nil {
 		b.Log.Warnf("Received member update with no member information: %#v", m)
 		return
 	}
-	username := m.Member.User.Username
-	if m.Member.Nick != "" {
-		username = m.Member.Nick
+
+	username := m.User.Username
+	if m.Nick != "" {
+		username = m.Nick
 	}
 
 	rmsg := config.Message{
@@ -263,6 +289,7 @@ func (b *Bdiscord) memberAdd(s *discordgo.Session, m *discordgo.GuildMemberAdd) 
 	}
 	b.Log.Debugf("<= Sending message from %s to gateway", b.Account)
 	b.Log.Debugf("<= Message is %#v", rmsg)
+
 	b.Remote <- rmsg
 }
 
@@ -271,16 +298,19 @@ func (b *Bdiscord) memberRemove(s *discordgo.Session, m *discordgo.GuildMemberRe
 		b.Log.Debugf("Ignoring memberRemove because it originates from a different guild")
 		return
 	}
+
 	if b.GetBool("nosendjoinpart") {
 		return
 	}
+
 	if m.Member == nil {
 		b.Log.Warnf("Received member update with no member information: %#v", m)
 		return
 	}
-	username := m.Member.User.Username
-	if m.Member.Nick != "" {
-		username = m.Member.Nick
+
+	username := m.User.Username
+	if m.Nick != "" {
+		username = m.Nick
 	}
 
 	rmsg := config.Message{
@@ -291,18 +321,22 @@ func (b *Bdiscord) memberRemove(s *discordgo.Session, m *discordgo.GuildMemberRe
 	}
 	b.Log.Debugf("<= Sending message from %s to gateway", b.Account)
 	b.Log.Debugf("<= Message is %#v", rmsg)
+
 	b.Remote <- rmsg
 }
 
 func handleEmbed(embed *discordgo.MessageEmbed) string {
-	var t []string
-	var result string
+	var (
+		t      []string
+		result string
+	)
 
 	t = append(t, embed.Title)
 	t = append(t, embed.Description)
 	t = append(t, embed.URL)
 
 	i := 0
+
 	for _, e := range t {
 		if e == "" {
 			continue

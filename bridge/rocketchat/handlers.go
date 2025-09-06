@@ -10,17 +10,22 @@ import (
 
 func (b *Brocketchat) handleRocket() {
 	messages := make(chan *config.Message)
+
 	if b.GetString("WebhookBindAddress") != "" {
 		b.Log.Debugf("Choosing webhooks based receiving")
+
 		go b.handleRocketHook(messages)
 	} else {
 		b.Log.Debugf("Choosing login/password based receiving")
+
 		go b.handleRocketClient(messages)
 	}
+
 	for message := range messages {
 		message.Account = b.Account
 		b.Log.Debugf("<= Sending message from %s on %s to gateway", message.Username, b.Account)
 		b.Log.Debugf("<= Message is %#v", message)
+
 		b.Remote <- *message
 	}
 }
@@ -33,6 +38,7 @@ func (b *Brocketchat) handleRocketHook(messages chan *config.Message) {
 		if message.UserName == b.GetString("Nick") {
 			continue
 		}
+
 		messages <- &config.Message{
 			UserID:   message.UserID,
 			Username: message.UserName,
@@ -55,19 +61,23 @@ func (b *Brocketchat) handleStatusEvent(ev models.Message, rmsg *config.Message)
 		rmsg.Event = config.EventTopicChange
 		return true
 	}
+
 	b.Log.Debugf("Dropping message with unknown type: %s", ev.Type)
+
 	return false
 }
 
 func (b *Brocketchat) handleRocketClient(messages chan *config.Message) {
 	for message := range b.messageChan {
-		message := message
+
 		// skip messages with same ID, apparently messages get duplicated for an unknown reason
 		if _, ok := b.cache.Get(message.ID); ok {
 			continue
 		}
+
 		b.cache.Add(message.ID, true)
 		b.Log.Debugf("message %#v", message)
+
 		m := message
 		if b.skipMessage(&m) {
 			b.Log.Debugf("Skipped message: %#v", message)
@@ -99,9 +109,11 @@ func (b *Brocketchat) handleAttachments(message *models.Message, rmsg *config.Me
 			if attachment.Title != "" {
 				rmsg.Text = attachment.Title + "\n"
 			}
+
 			if attachment.Title != "" && attachment.Text != "" {
 				rmsg.Text += "\n"
 			}
+
 			if attachment.Text != "" {
 				rmsg.Text += attachment.Text
 			}
@@ -109,7 +121,8 @@ func (b *Brocketchat) handleAttachments(message *models.Message, rmsg *config.Me
 	}
 
 	for i := range message.Attachments {
-		if err := b.handleDownloadFile(rmsg, &message.Attachments[i]); err != nil {
+		err := b.handleDownloadFile(rmsg, &message.Attachments[i])
+		if err != nil {
 			b.Log.Errorf("Could not download incoming file: %#v", err)
 		}
 	}
@@ -117,20 +130,25 @@ func (b *Brocketchat) handleAttachments(message *models.Message, rmsg *config.Me
 
 func (b *Brocketchat) handleDownloadFile(rmsg *config.Message, file *models.Attachment) error {
 	downloadURL := b.GetString("server") + file.TitleLink
+
 	data, err := helper.DownloadFileAuthRocket(downloadURL, b.user.Token, b.user.ID)
 	if err != nil {
 		return fmt.Errorf("download %s failed %#v", downloadURL, err)
 	}
+
 	helper.HandleDownloadData(b.Log, rmsg, file.Title, rmsg.Text, downloadURL, data, b.General)
+
 	return nil
 }
 
 func (b *Brocketchat) handleUploadFile(msg *config.Message) error {
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
-		if err := b.uploadFile(&fi, b.getChannelID(msg.Channel)); err != nil {
+		err := b.uploadFile(&fi, b.getChannelID(msg.Channel))
+		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }

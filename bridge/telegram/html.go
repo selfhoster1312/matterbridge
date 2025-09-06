@@ -17,19 +17,20 @@ func (options *customHTML) Paragraph(out *bytes.Buffer, text func() bool) {
 		out.Truncate(marker)
 		return
 	}
+
 	out.WriteString("\n")
 }
 
 func (options *customHTML) BlockCode(out *bytes.Buffer, text []byte, lang string) {
 	out.WriteString("<pre>")
 
-	out.WriteString(string(text))
+	out.Write(text)
 	out.WriteString("</pre>\n")
 }
 
 func (options *customHTML) CodeSpan(out *bytes.Buffer, text []byte) {
 	out.WriteString("<code>")
-	out.WriteString(string(text))
+	out.Write(text)
 	out.WriteString("</code>")
 }
 
@@ -38,7 +39,7 @@ func (options *customHTML) Header(out *bytes.Buffer, text func() bool, level int
 }
 
 func (options *customHTML) HRule(out *bytes.Buffer) {
-	out.WriteByte('\n') //nolint:errcheck
+	out.WriteByte('\n')
 }
 
 func (options *customHTML) BlockQuote(out *bytes.Buffer, text []byte) {

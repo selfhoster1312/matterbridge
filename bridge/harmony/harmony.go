@@ -56,61 +56,66 @@ func (b *Bharmony) getProfile(u uint64) (*profilev1.GetProfileResponse, error) {
 		if v, ok := b.profileCache[u]; ok {
 			return v.data, nil
 		}
+
 		return nil, err
 	}
+
 	b.profileCache[u] = cachedProfile{
 		data:        resp,
 		lastUpdated: time.Now(),
 	}
+
 	return resp, nil
 }
 
 func (b *Bharmony) avatarFor(m *chatv1.Message) string {
-	if m.Overrides != nil {
-		return m.Overrides.GetAvatar()
+	if m.GetOverrides() != nil {
+		return m.GetOverrides().GetAvatar()
 	}
 
-	profi, err := b.getProfile(m.AuthorId)
+	profi, err := b.getProfile(m.GetAuthorId())
 	if err != nil {
 		return ""
 	}
 
-	return b.c.TransformHMCURL(profi.Profile.GetUserAvatar())
+	return b.c.TransformHMCURL(profi.GetProfile().GetUserAvatar())
 }
 
 func (b *Bharmony) usernameFor(m *chatv1.Message) string {
-	if m.Overrides != nil {
-		return m.Overrides.GetUsername()
+	if m.GetOverrides() != nil {
+		return m.GetOverrides().GetUsername()
 	}
 
-	profi, err := b.getProfile(m.AuthorId)
+	profi, err := b.getProfile(m.GetAuthorId())
 	if err != nil {
 		return ""
 	}
 
-	return profi.Profile.UserName
+	return profi.GetProfile().GetUserName()
 }
 
 func (b *Bharmony) toMessage(msg *shibshib.LocatedMessage) config.Message {
 	message := config.Message{}
 	message.Account = b.Account
-	message.UserID = uToStr(msg.Message.AuthorId)
+	message.UserID = uToStr(msg.Message.GetAuthorId())
 	message.Avatar = b.avatarFor(msg.Message)
 	message.Username = b.usernameFor(msg.Message)
 	message.Channel = uToStr(msg.ChannelID)
 	message.ID = uToStr(msg.MessageId)
 
-	switch content := msg.Message.Content.Content.(type) {
+	switch content := msg.Message.GetContent().GetContent().(type) {
 	case *chatv1.Content_EmbedMessage:
 		message.Text = "Embed"
 	case *chatv1.Content_AttachmentMessage:
 		var s strings.Builder
-		for idx, attach := range content.AttachmentMessage.Files {
-			s.WriteString(b.c.TransformHMCURL(attach.Id))
-			if idx < len(content.AttachmentMessage.Files)-1 {
+		for idx, attach := range content.AttachmentMessage.GetFiles() {
+			s.WriteString(b.c.TransformHMCURL(attach.GetId()))
+
+			if idx < len(content.AttachmentMessage.GetFiles())-1 {
 				s.WriteString(", ")
 			}
 		}
+
 		message.Text = s.String()
 	case *chatv1.Content_PhotoMessage:
 		var s strings.Builder
@@ -118,13 +123,15 @@ func (b *Bharmony) toMessage(msg *shibshib.LocatedMessage) config.Message {
 			s.WriteString(attach.GetCaption().GetText())
 			s.WriteString("\n")
 			s.WriteString(b.c.TransformHMCURL(attach.GetHmc()))
+
 			if idx < len(content.PhotoMessage.GetPhotos())-1 {
 				s.WriteString("\n\n")
 			}
 		}
+
 		message.Text = s.String()
 	case *chatv1.Content_TextMessage:
-		message.Text = content.TextMessage.Content.Text
+		message.Text = content.TextMessage.GetContent().GetText()
 	}
 
 	return message
@@ -134,7 +141,7 @@ func (b *Bharmony) outputMessages() {
 	for {
 		msg := <-b.c.EventsStream()
 
-		if msg.Message.AuthorId == b.c.UserID {
+		if msg.Message.GetAuthorId() == b.c.UserID {
 			continue
 		}
 
@@ -151,11 +158,12 @@ func (b *Bharmony) GetUint64(conf string) uint64 {
 	return num
 }
 
-func (b *Bharmony) Connect() (err error) {
+func (b *Bharmony) Connect() error {
 	b.c, err = shibshib.NewClient(b.GetString("Homeserver"), b.GetString("Token"), b.GetUint64("UserID"))
 	if err != nil {
-		return
+		return err
 	}
+
 	b.c.SubscribeToGuild(b.GetUint64("Community"))
 
 	go b.outputMessages()
@@ -166,7 +174,7 @@ func (b *Bharmony) Connect() (err error) {
 func (b *Bharmony) send(msg config.Message) (id string, err error) {
 	msgChan, err := strToU(msg.Channel)
 	if err != nil {
-		return
+		return id, err
 	}
 
 	retID, err := b.c.ChatKit.SendMessage(&chatv1.SendMessageRequest{
@@ -195,7 +203,7 @@ func (b *Bharmony) send(msg config.Message) (id string, err error) {
 		log.Println(err.Error())
 	}
 
-	return uToStr(retID.MessageId), err
+	return uToStr(retID.GetMessageId()), err
 }
 
 func (b *Bharmony) delete(msg config.Message) (id string, err error) {
@@ -214,6 +222,7 @@ func (b *Bharmony) delete(msg config.Message) (id string, err error) {
 		ChannelId: msgChan,
 		MessageId: msgID,
 	})
+
 	return "", err
 }
 
@@ -227,6 +236,7 @@ func (b *Bharmony) typing(msg config.Message) (id string, err error) {
 		GuildId:   b.GetUint64("Community"),
 		ChannelId: msgChan,
 	})
+
 	return "", err
 }
 

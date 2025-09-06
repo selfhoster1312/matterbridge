@@ -28,5 +28,6 @@ func toUTF8(from string, input string) string {
 	}
 
 	res, _ := enc.NewDecoder().String(input)
+
 	return res
 }

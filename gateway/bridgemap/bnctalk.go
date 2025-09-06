@@ -1,3 +1,4 @@
+//go:build !nonctalk
 // +build !nonctalk
 
 package bridgemap

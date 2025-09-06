@@ -44,14 +44,18 @@ func NewRouter(rootLogger *logrus.Logger, cfg config.Config, bridgeMap map[strin
 		if !entry.Enable {
 			continue
 		}
+
 		if entry.Name == "" {
 			return nil, fmt.Errorf("%s", "Gateway without name found")
 		}
+
 		if _, ok := r.Gateways[entry.Name]; ok {
 			return nil, fmt.Errorf("Gateway with name %s already exists", entry.Name)
 		}
+
 		r.Gateways[entry.Name] = New(rootLogger, entry, r)
 	}
+
 	return r, nil
 }
 
@@ -59,34 +63,43 @@ func NewRouter(rootLogger *logrus.Logger, cfg config.Config, bridgeMap map[strin
 // between them.
 func (r *Router) Start() error {
 	m := make(map[string]*bridge.Bridge)
+
 	if len(r.Gateways) == 0 {
-		return fmt.Errorf("no [[gateway]] configured. See https://github.com/42wim/matterbridge/wiki/How-to-create-your-config for more info")
+		return errors.New("no [[gateway]] configured. See https://github.com/42wim/matterbridge/wiki/How-to-create-your-config for more info")
 	}
+
 	for _, gw := range r.Gateways {
 		r.logger.Infof("Parsing gateway %s", gw.Name)
+
 		if len(gw.Bridges) == 0 {
 			return fmt.Errorf("no bridges configured for gateway %s. See https://github.com/42wim/matterbridge/wiki/How-to-create-your-config for more info", gw.Name)
 		}
+
 		for _, br := range gw.Bridges {
 			m[br.Account] = br
 		}
 	}
+
 	for _, br := range m {
 		r.logger.Infof("Starting bridge: %s ", br.Account)
+
 		err := br.Connect()
 		if err != nil {
 			e := fmt.Errorf("Bridge %s failed to start: %v", br.Account, err)
 			if r.disableBridge(br, e) {
 				continue
 			}
+
 			return e
 		}
+
 		err = br.JoinChannels()
 		if err != nil {
 			e := fmt.Errorf("Bridge %s failed to join channel: %v", br.Account, err)
 			if r.disableBridge(br, e) {
 				continue
 			}
+
 			return e
 		}
 	}
@@ -99,8 +112,9 @@ func (r *Router) Start() error {
 			}
 		}
 	}
+
 	go r.handleReceive()
-	//go r.updateChannelMembers()
+	// go r.updateChannelMembers()
 	return nil
 }
 
@@ -113,8 +127,10 @@ func (r *Router) disableBridge(br *bridge.Bridge, err error) bool {
 		*br = bridge.Bridge{
 			Log: br.Log,
 		}
+
 		return true
 	}
+
 	return false
 }
 
@@ -124,12 +140,13 @@ func (r *Router) getBridge(account string) *bridge.Bridge {
 			return br
 		}
 	}
+
 	return nil
 }
 
 func (r *Router) handleReceive() {
 	for msg := range r.Message {
-		msg := msg // scopelint
+		// scopelint
 		r.handleEventGetChannelMembers(&msg)
 		r.handleEventFailure(&msg)
 		r.handleEventRejoinChannels(&msg)
@@ -138,18 +155,24 @@ func (r *Router) handleReceive() {
 		msg.Protocol = r.getBridge(msg.Account).Protocol
 
 		filesHandled := false
+
 		for _, gw := range r.Gateways {
 			// record all the message ID's of the different bridges
 			var msgIDs []*BrMsgID
+
 			if gw.ignoreMessage(&msg) {
 				continue
 			}
+
 			msg.Timestamp = time.Now()
 			gw.modifyMessage(&msg)
+
 			if !filesHandled {
 				gw.handleFiles(&msg)
+
 				filesHandled = true
 			}
+
 			for _, br := range gw.Bridges {
 				msgIDs = append(msgIDs, gw.handleMessage(&msg, br)...)
 			}
@@ -175,6 +198,7 @@ func (r *Router) updateChannelMembers() {
 	// TODO sleep a minute because slack can take a while
 	// fix this by having actually connectionDone events send to the router
 	time.Sleep(time.Minute)
+
 	for {
 		for _, gw := range r.Gateways {
 			for _, br := range gw.Bridges {
@@ -182,12 +206,15 @@ func (r *Router) updateChannelMembers() {
 				if br.Protocol != "slack" {
 					continue
 				}
+
 				r.logger.Debugf("sending %s to %s", config.EventGetChannelMembers, br.Account)
+
 				if _, err := br.Send(config.Message{Event: config.EventGetChannelMembers}); err != nil {
 					r.logger.Errorf("updateChannelMembers: %s", err)
 				}
 			}
 		}
+
 		time.Sleep(time.Minute)
 	}
 }

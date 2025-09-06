@@ -43,13 +43,17 @@ func New(cfg *bridge.Config) bridge.Bridger {
 
 func (b *Bxmpp) Connect() error {
 	b.Log.Infof("Connecting %s", b.GetString("Server"))
-	if err := b.createXMPP(); err != nil {
+	err := b.createXMPP()
+
+	if err != nil {
 		b.Log.Debugf("%#v", err)
 		return err
 	}
 
 	b.Log.Info("Connection succeeded")
+
 	go b.manageConnection()
+
 	return nil
 }
 
@@ -64,6 +68,7 @@ func (b *Bxmpp) JoinChannel(channel config.ChannelInfo) error {
 	} else {
 		b.xc.JoinMUCNoHistory(channel.Name+"@"+b.GetString("Muc"), b.GetString("Nick"))
 	}
+
 	return nil
 }
 
@@ -91,9 +96,11 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 
 	// Upload a file (in XMPP case send the upload URL because XMPP has no native upload support).
 	var err error
+
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
 			b.Log.Debugf("=> Sending attachement message %#v", rmsg)
+
 			if b.GetString("WebhookURL") != "" {
 				err = b.postSlackCompatibleWebhook(msg)
 			} else {
@@ -108,6 +115,7 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 				b.Log.WithError(err).Error("Unable to send message with share URL.")
 			}
 		}
+
 		if len(msg.Extra["file"]) > 0 {
 			return "", b.handleUploadFile(&msg)
 		}
@@ -115,6 +123,7 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 
 	if b.GetString("WebhookURL") != "" {
 		b.Log.Debugf("Sending message using Webhook")
+
 		err := b.postSlackCompatibleWebhook(msg)
 		if err != nil {
 			b.Log.Errorf("Failed to send message using webhook: %s", err)
@@ -126,11 +135,15 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 
 	// Post normal message.
 	var msgReplaceID string
+
 	msgID := xid.New().String()
+
 	if msg.ID != "" {
 		msgReplaceID = msg.ID
 	}
+
 	b.Log.Debugf("=> Sending message %#v", msg)
+
 	if _, err := b.xc.Send(xmpp.Chat{
 		Type:      "groupchat",
 		Remote:    msg.Channel + "@" + b.GetString("Muc"),
@@ -140,6 +153,7 @@ func (b *Bxmpp) Send(msg config.Message) (string, error) {
 	}); err != nil {
 		return "", err
 	}
+
 	return msgID, nil
 }
 
@@ -148,6 +162,7 @@ func (b *Bxmpp) postSlackCompatibleWebhook(msg config.Message) error {
 		Username string `json:"username"`
 		Text     string `json:"text"`
 	}
+
 	webhookBody, err := json.Marshal(XMPPWebhook{
 		Username: msg.Username,
 		Text:     msg.Text,
@@ -164,16 +179,19 @@ func (b *Bxmpp) postSlackCompatibleWebhook(msg config.Message) error {
 	}
 
 	resp.Body.Close()
+
 	return nil
 }
 
 func (b *Bxmpp) createXMPP() error {
 	var serverName string
+
 	switch {
 	case !b.GetBool("Anonymous"):
 		if !strings.Contains(b.GetString("Jid"), "@") {
 			return fmt.Errorf("the Jid %s doesn't contain an @", b.GetString("Jid"))
 		}
+
 		serverName = strings.Split(b.GetString("Jid"), "@")[1]
 	case !strings.Contains(b.GetString("Server"), ":"):
 		serverName = strings.Split(b.GetString("Server"), ":")[0]
@@ -183,7 +201,7 @@ func (b *Bxmpp) createXMPP() error {
 
 	tc := &tls.Config{
 		ServerName:         serverName,
-		InsecureSkipVerify: b.GetBool("SkipTLSVerify"), // nolint: gosec
+		InsecureSkipVerify: b.GetBool("SkipTLSVerify"), //nolint: gosec
 	}
 
 	xmpp.DebugWriter = b.Log.Writer()
@@ -202,8 +220,11 @@ func (b *Bxmpp) createXMPP() error {
 		Resource:                     "",
 		InsecureAllowUnencryptedAuth: b.GetBool("NoTLS"),
 	}
+
 	var err error
+
 	b.xc, err = options.NewClient()
+
 	return err
 }
 
@@ -231,7 +252,8 @@ func (b *Bxmpp) manageConnection() {
 			}
 		}
 
-		if err := b.handleXMPP(); err != nil {
+		err := b.handleXMPP()
+		if err != nil {
 			b.Log.WithError(err).Error("Disconnected.")
 			b.setConnected(false)
 		}
@@ -244,11 +266,15 @@ func (b *Bxmpp) manageConnection() {
 			time.Sleep(d)
 
 			b.Log.Infof("Reconnecting now.")
-			if err := b.createXMPP(); err == nil {
+			err := b.createXMPP()
+
+			if err == nil {
 				b.setConnected(true)
 				bf.Reset()
+
 				break
 			}
+
 			b.Log.Warn("Failed to reconnect.")
 		}
 	}
@@ -256,14 +282,18 @@ func (b *Bxmpp) manageConnection() {
 
 func (b *Bxmpp) xmppKeepAlive() chan bool {
 	done := make(chan bool)
+
 	go func() {
 		ticker := time.NewTicker(90 * time.Second)
 		defer ticker.Stop()
+
 		for {
 			select {
 			case <-ticker.C:
 				b.Log.Debugf("PING")
-				if err := b.xc.PingC2S("", ""); err != nil {
+				err := b.xc.PingC2S("", "")
+
+				if err != nil {
 					b.Log.Debugf("PING failed %#v", err)
 				}
 			case <-done:
@@ -271,6 +301,7 @@ func (b *Bxmpp) xmppKeepAlive() chan bool {
 			}
 		}
 	}()
+
 	return done
 }
 
@@ -309,6 +340,7 @@ func (b *Bxmpp) handleXMPP() error {
 
 				available, sok := b.avatarAvailability[v.Remote]
 				avatar := ""
+
 				if !sok {
 					b.Log.Debugf("Requesting avatar data")
 					b.avatarAvailability[v.Remote] = false
@@ -321,6 +353,7 @@ func (b *Bxmpp) handleXMPP() error {
 				if v.ReplaceID != "" {
 					msgID = v.ReplaceID
 				}
+
 				rmsg := config.Message{
 					Username: b.parseNick(v.Remote),
 					Text:     v.Text,
@@ -334,6 +367,7 @@ func (b *Bxmpp) handleXMPP() error {
 
 				// Check if we have an action event.
 				var ok bool
+
 				rmsg.Text, ok = b.replaceAction(rmsg.Text)
 				if ok {
 					rmsg.Event = config.EventUserAction
@@ -341,6 +375,7 @@ func (b *Bxmpp) handleXMPP() error {
 
 				b.Log.Debugf("<= Sending message from %s on %s to gateway", rmsg.Username, b.Account)
 				b.Log.Debugf("<= Message is %#v", rmsg)
+
 				b.Remote <- rmsg
 			}
 		case xmpp.AvatarData:
@@ -355,8 +390,9 @@ func (b *Bxmpp) handleXMPP() error {
 
 func (b *Bxmpp) replaceAction(text string) (string, bool) {
 	if strings.HasPrefix(text, "/me ") {
-		return strings.Replace(text, "/me ", "", -1), true
+		return strings.ReplaceAll(text, "/me ", ""), true
 	}
+
 	return text, false
 }
 
@@ -369,6 +405,7 @@ func (b *Bxmpp) handleUploadFile(msg *config.Message) error {
 		if fileInfo.Comment != "" {
 			msg.Text += fileInfo.Comment + ": "
 		}
+
 		if fileInfo.URL != "" {
 			msg.Text = fileInfo.URL
 			if fileInfo.Comment != "" {
@@ -376,6 +413,7 @@ func (b *Bxmpp) handleUploadFile(msg *config.Message) error {
 				urlDesc = fileInfo.Comment
 			}
 		}
+
 		if _, err := b.xc.Send(xmpp.Chat{
 			Type:   "groupchat",
 			Remote: msg.Channel + "@" + b.GetString("Muc"),
@@ -395,6 +433,7 @@ func (b *Bxmpp) handleUploadFile(msg *config.Message) error {
 			}
 		}
 	}
+
 	return nil
 }
 
@@ -406,6 +445,7 @@ func (b *Bxmpp) parseNick(remote string) string {
 			return s[1] // nick
 		}
 	}
+
 	return ""
 }
 
@@ -414,6 +454,7 @@ func (b *Bxmpp) parseChannel(remote string) string {
 	if len(s) >= 2 {
 		return s[0] // channel
 	}
+
 	return ""
 }
 
@@ -450,6 +491,7 @@ func (b *Bxmpp) skipMessage(message xmpp.Chat) bool {
 
 func (b *Bxmpp) setConnected(state bool) {
 	b.Lock()
+
 	b.connected = state
 	defer b.Unlock()
 }
@@ -457,5 +499,6 @@ func (b *Bxmpp) setConnected(state bool) {
 func (b *Bxmpp) Connected() bool {
 	b.RLock()
 	defer b.RUnlock()
+
 	return b.connected
 }

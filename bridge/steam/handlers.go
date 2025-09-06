@@ -12,6 +12,7 @@ import (
 func (b *Bsteam) handleChatMsg(e *steam.ChatMsgEvent) {
 	b.Log.Debugf("Receiving ChatMsgEvent: %#v", e)
 	b.Log.Debugf("<= Sending message from %s on %s to gateway", b.getNick(e.ChatterId), b.Account)
+
 	var channel int64
 	if e.ChatRoomId == 0 {
 		channel = int64(e.ChatterId)
@@ -22,6 +23,7 @@ func (b *Bsteam) handleChatMsg(e *steam.ChatMsgEvent) {
 		// channel = int64(e.ChatRoomId) & 0xfffffffffffff
 		channel = int64(e.ChatRoomId) - 0x18000000000000
 	}
+
 	msg := config.Message{
 		Username: b.getNick(e.ChatterId),
 		Text:     e.Message,
@@ -40,7 +42,7 @@ func (b *Bsteam) handleEvents() {
 	}
 	// TODO Attempt to read existing auth hash to avoid steam guard.
 	// Maybe works
-	//myLoginInfo.SentryFileHash, _ = ioutil.ReadFile("sentry")
+	// myLoginInfo.SentryFileHash, _ = ioutil.ReadFile("sentry")
 	for event := range b.c.Events() {
 		switch e := event.(type) {
 		case *steam.ChatMsgEvent:
@@ -61,6 +63,7 @@ func (b *Bsteam) handleEvents() {
 		*/
 		case *steam.LogOnFailedEvent:
 			b.Log.Info("Logon failed", e)
+
 			err := b.handleLogOnFailed(e, myLoginInfo)
 			if err != nil {
 				b.Log.Error(err)
@@ -68,7 +71,9 @@ func (b *Bsteam) handleEvents() {
 			}
 		case *steam.LoggedOnEvent:
 			b.Log.Debugf("LoggedOnEvent: %#v", e)
+
 			b.connected <- struct{}{}
+
 			b.Log.Debugf("setting online")
 			b.c.Social.SetPersonaState(steamlang.EPersonaState_Online)
 		case *steam.DisconnectedEvent:
@@ -87,12 +92,14 @@ func (b *Bsteam) handleLogOnFailed(e *steam.LogOnFailedEvent, myLoginInfo *steam
 	switch e.Result {
 	case steamlang.EResult_AccountLoginDeniedNeedTwoFactor:
 		b.Log.Info("Steam guard isn't letting me in! Enter 2FA code:")
+
 		var code string
 		fmt.Scanf("%s", &code)
 		// TODO https://github.com/42wim/matterbridge/pull/630#discussion_r238103978
 		myLoginInfo.TwoFactorCode = code
 	case steamlang.EResult_AccountLogonDenied:
 		b.Log.Info("Steam guard isn't letting me in! Enter auth code:")
+
 		var code string
 		fmt.Scanf("%s", &code)
 		// TODO https://github.com/42wim/matterbridge/pull/630#discussion_r238103978
@@ -103,6 +110,7 @@ func (b *Bsteam) handleLogOnFailed(e *steam.LogOnFailedEvent, myLoginInfo *steam
 		return fmt.Errorf("LogOnFailedEvent: %#v ", e.Result)
 		// TODO: Handle EResult_InvalidLoginAuthCode
 	}
+
 	return nil
 }
 
@@ -112,15 +120,18 @@ func (b *Bsteam) handleFileInfo(msg *config.Message, f interface{}) error {
 	if _, ok := f.(config.FileInfo); !ok {
 		return fmt.Errorf("handleFileInfo cast failed %#v", f)
 	}
+
 	fi := f.(config.FileInfo)
 	if fi.Comment != "" {
 		msg.Text += fi.Comment + ": "
 	}
+
 	if fi.URL != "" {
 		msg.Text = fi.URL
 		if fi.Comment != "" {
 			msg.Text = fi.Comment + ": " + fi.URL
 		}
 	}
+
 	return nil
 }

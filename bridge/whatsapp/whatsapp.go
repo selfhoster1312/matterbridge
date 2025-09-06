@@ -67,6 +67,7 @@ func (b *Bwhatsapp) Connect() error {
 	}
 
 	b.Log.Debugln("Connecting to WhatsApp..")
+
 	conn, err := whatsapp.NewConn(20 * time.Second)
 	if err != nil {
 		return errors.New("failed to connect to WhatsApp: " + err.Error())
@@ -85,7 +86,8 @@ func (b *Bwhatsapp) Connect() error {
 
 	// login to a new session
 	if b.session == nil {
-		if err = b.Login(); err != nil {
+		err = b.Login()
+		if err != nil {
 			return err
 		}
 	}
@@ -99,7 +101,7 @@ func (b *Bwhatsapp) Connect() error {
 
 	// see https://github.com/Rhymen/go-whatsapp/issues/137#issuecomment-480316013
 	for len(b.conn.Store.Contacts) == 0 {
-		b.conn.Contacts() // nolint:errcheck
+		b.conn.Contacts() //nolint:errcheck
 
 		<-time.After(1 * time.Second)
 	}
@@ -176,7 +178,7 @@ func (b *Bwhatsapp) JoinChannel(channel config.ChannelInfo) error {
 
 	// see https://github.com/Rhymen/go-whatsapp/issues/137#issuecomment-480316013
 	for len(b.conn.Store.Contacts) == 0 {
-		b.conn.Contacts() // nolint:errcheck
+		b.conn.Contacts() //nolint:errcheck
 		<-time.After(1 * time.Second)
 	}
 
@@ -192,6 +194,7 @@ func (b *Bwhatsapp) JoinChannel(channel config.ChannelInfo) error {
 
 	// channel.Name specifies group name that might change, warn about it
 	var jids []string
+
 	for id, contact := range b.conn.Store.Contacts {
 		if isGroupJid(id) && contact.Name == channel.Name {
 			jids = append(jids, id)
@@ -336,6 +339,6 @@ func (b *Bwhatsapp) Send(msg config.Message) (string, error) {
 }
 
 // TODO do we want that? to allow login with QR code from a bridged channel? https://github.com/tulir/mautrix-whatsapp/blob/513eb18e2d59bada0dd515ee1abaaf38a3bfe3d5/commands.go#L76
-//func (b *Bwhatsapp) Command(cmd string) string {
+// func (b *Bwhatsapp) Command(cmd string) string {
 //	return ""
 //}

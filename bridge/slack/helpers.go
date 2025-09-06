@@ -52,6 +52,7 @@ func (b *Bslack) populateReceivedMessage(ev *slack.MessageEvent) (*config.Messag
 	if err = b.populateMessageWithUserInfo(ev, rmsg); err != nil {
 		return nil, err
 	}
+
 	return rmsg, err
 }
 
@@ -62,12 +63,14 @@ func (b *Bslack) populateMessageWithUserInfo(ev *slack.MessageEvent, rmsg *confi
 
 	// First, deal with bot-originating messages but only do so when not using webhooks: we
 	// would not be able to distinguish which bot would be sending them.
-	if err := b.populateMessageWithBotInfo(ev, rmsg); err != nil {
+	err := b.populateMessageWithBotInfo(ev, rmsg)
+	if err != nil {
 		return err
 	}
 
 	// Second, deal with "real" users if we have the necessary information.
 	var userID string
+
 	switch {
 	case ev.User != "":
 		userID = ev.User
@@ -83,13 +86,16 @@ func (b *Bslack) populateMessageWithUserInfo(ev *slack.MessageEvent, rmsg *confi
 	}
 
 	rmsg.UserID = user.ID
+
 	rmsg.Username = user.Name
 	if user.Profile.DisplayName != "" {
 		rmsg.Username = user.Profile.DisplayName
 	}
+
 	if b.GetBool("UseFullName") && user.Profile.RealName != "" {
 		rmsg.Username = user.Profile.RealName
 	}
+
 	return nil
 }
 
@@ -98,8 +104,11 @@ func (b *Bslack) populateMessageWithBotInfo(ev *slack.MessageEvent, rmsg *config
 		return nil
 	}
 
-	var err error
-	var bot *slack.Bot
+	var (
+		err error
+		bot *slack.Bot
+	)
+
 	for {
 		bot, err = b.rtm.GetBotInfo(slack.GetBotInfoParameters{
 			Bot: ev.BotID,
@@ -108,11 +117,13 @@ func (b *Bslack) populateMessageWithBotInfo(ev *slack.MessageEvent, rmsg *config
 			break
 		}
 
-		if err = handleRateLimit(b.Log, err); err != nil {
+		err = handleRateLimit(b.Log, err)
+		if err != nil {
 			b.Log.Errorf("Could not retrieve bot information: %#v", err)
 			return err
 		}
 	}
+
 	b.Log.Debugf("Found bot %#v", bot)
 
 	if bot.Name != "" {
@@ -120,8 +131,10 @@ func (b *Bslack) populateMessageWithBotInfo(ev *slack.MessageEvent, rmsg *config
 		if ev.Username != "" {
 			rmsg.Username = ev.Username
 		}
+
 		rmsg.UserID = bot.ID
 	}
+
 	return nil
 }
 
@@ -145,7 +158,9 @@ func (b *Bslack) extractTopicOrPurpose(text string) (string, string) {
 			return updateType, ""
 		}
 	}
+
 	b.Log.Warnf("Encountered channel topic or purpose change message with unexpected format: %s", text)
+
 	return "unknown", ""
 }
 
@@ -156,8 +171,10 @@ func (b *Bslack) replaceMention(text string) string {
 		if username := b.users.getUsername(userID); userID != "" {
 			return "@" + username
 		}
+
 		return match
 	}
+
 	return mentionRE.ReplaceAllStringFunc(text, replaceFunc)
 }
 
@@ -166,6 +183,7 @@ func (b *Bslack) replaceChannel(text string) string {
 	for _, r := range channelRE.FindAllStringSubmatch(text, -1) {
 		text = strings.Replace(text, r[0], "#"+r[1], 1)
 	}
+
 	return text
 }
 
@@ -178,6 +196,7 @@ func (b *Bslack) replaceVariable(text string) string {
 			text = strings.Replace(text, r[0], "@"+r[1], 1)
 		}
 	}
+
 	return text
 }
 
@@ -213,6 +232,7 @@ func (b *Bslack) replaceb0rkedMarkDown(text string) string {
 	for _, rule := range regexReplaceAllString {
 		text = rule.regex.ReplaceAllString(text, rule.rpl)
 	}
+
 	return text
 }
 
@@ -223,6 +243,7 @@ func (b *Bslack) replaceCodeFence(text string) string {
 // getUsersInConversation returns an array of userIDs that are members of channelID
 func (b *Bslack) getUsersInConversation(channelID string) ([]string, error) {
 	channelMembers := []string{}
+
 	for {
 		queryParams := &slack.GetUsersInConversationParameters{
 			ChannelID: channelID,
@@ -230,9 +251,11 @@ func (b *Bslack) getUsersInConversation(channelID string) ([]string, error) {
 
 		members, nextCursor, err := b.sc.GetUsersInConversation(queryParams)
 		if err != nil {
-			if err = handleRateLimit(b.Log, err); err != nil {
+			err = handleRateLimit(b.Log, err)
+			if err != nil {
 				return channelMembers, fmt.Errorf("Could not retrieve users in channels: %#v", err)
 			}
+
 			continue
 		}
 
@@ -241,8 +264,10 @@ func (b *Bslack) getUsersInConversation(channelID string) ([]string, error) {
 		if nextCursor == "" {
 			break
 		}
+
 		queryParams.Cursor = nextCursor
 	}
+
 	return channelMembers, nil
 }
 
@@ -251,7 +276,9 @@ func handleRateLimit(log *logrus.Entry, err error) error {
 	if !ok {
 		return err
 	}
+
 	log.Infof("Rate-limited by Slack. Sleeping for %v", rateLimit.RetryAfter)
 	time.Sleep(rateLimit.RetryAfter)
+
 	return nil
 }

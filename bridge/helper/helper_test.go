@@ -103,6 +103,7 @@ func TestGetSubLines(t *testing.T) {
 	for testname, testcase := range lineSplittingTestCases {
 		splitLines := GetSubLines(testcase.input, testLineLength, "")
 		assert.Equalf(t, testcase.splitOutput, splitLines, "'%s' testcase should give expected lines with splitting.", testname)
+
 		for _, splitLine := range splitLines {
 			byteLength := len([]byte(splitLine))
 			assert.True(t, byteLength <= testLineLength, "Splitted line '%s' of testcase '%s' should not exceed the maximum byte-length (%d vs. %d).", splitLine, testcase, byteLength, testLineLength)
@@ -124,12 +125,13 @@ func TestConvertWebPToPNG(t *testing.T) {
 	}
 
 	d := &input
+
 	err = ConvertWebPToPNG(d)
 	if err != nil {
 		t.Fail()
 	}
 
-	err = ioutil.WriteFile("test.png", *d, 0o644) // nolint:gosec
+	err = ioutil.WriteFile("test.png", *d, 0o644) //nolint:gosec
 	if err != nil {
 		t.Fail()
 	}
@@ -230,6 +232,7 @@ func TestClipOrSplitMessage(t *testing.T) {
 	for testname, testcase := range clippingOrSplittingTestCases {
 		actualOutput := ClipOrSplitMessage(testcase.inputText, testcase.clipSplitLength, testcase.clippingMessage, testcase.splitMax)
 		assert.Equalf(t, testcase.expectedOutput, actualOutput, "'%s' testcase should give expected lines with clipping+splitting.", testname)
+
 		for _, splitLine := range testcase.expectedOutput {
 			byteLength := len([]byte(splitLine))
 			assert.True(t, byteLength <= testcase.clipSplitLength, "Splitted line '%s' of testcase '%s' should not exceed the maximum byte-length (%d vs. %d).", splitLine, testname, testcase.clipSplitLength, byteLength)

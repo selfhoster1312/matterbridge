@@ -27,9 +27,12 @@ func ConvertTgsToX(data *[]byte, outputFormat string, logger *logrus.Entry) erro
 	if err != nil {
 		return err
 	}
+
 	tmpInFileName := tmpInFile.Name()
+
 	defer func() {
-		if removeErr := os.Remove(tmpInFileName); removeErr != nil {
+		removeErr := os.Remove(tmpInFileName)
+		if removeErr != nil {
 			logger.Errorf("Could not delete temporary (input) file %s: %v", tmpInFileName, removeErr)
 		}
 	}()
@@ -39,9 +42,12 @@ func ConvertTgsToX(data *[]byte, outputFormat string, logger *logrus.Entry) erro
 	if err != nil {
 		return err
 	}
+
 	tmpOutFileName := tmpOutFile.Name()
+
 	defer func() {
-		if removeErr := os.Remove(tmpOutFileName); removeErr != nil {
+		removeErr := os.Remove(tmpOutFileName)
+		if removeErr != nil {
 			logger.Errorf("Could not delete temporary (output) file %s: %v", tmpOutFileName, removeErr)
 		}
 	}()
@@ -50,7 +56,8 @@ func ConvertTgsToX(data *[]byte, outputFormat string, logger *logrus.Entry) erro
 		return writeErr
 	}
 	// Must close before calling lottie to avoid data races:
-	if closeErr := tmpInFile.Close(); closeErr != nil {
+	closeErr := tmpInFile.Close()
+	if closeErr != nil {
 		return closeErr
 	}
 
@@ -64,12 +71,14 @@ func ConvertTgsToX(data *[]byte, outputFormat string, logger *logrus.Entry) erro
 		// 'stderr' already contains some parts of Stderr, because it was set to 'nil'.
 		return stderr
 	}
+
 	dataContents, err := ioutil.ReadFile(tmpOutFileName)
 	if err != nil {
 		return err
 	}
 
 	*data = dataContents
+
 	return nil
 }
 
@@ -82,7 +91,7 @@ func SupportsFormat(format string) bool {
 	default:
 		return false
 	}
-	return false
+
 }
 
 func LottieBackend() string {

@@ -1,3 +1,4 @@
+//go:build !nokeybase
 // +build !nokeybase
 
 package bridgemap

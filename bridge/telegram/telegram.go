@@ -33,26 +33,33 @@ func New(cfg *bridge.Config) bridge.Bridger {
 		if err != nil {
 			log.Fatalf("Telegram bridge configured to convert .tgs files to '%s', but %s does not appear to work:\n%#v", tgsConvertFormat, helper.LottieBackend(), err)
 		}
+
 		if !helper.SupportsFormat(tgsConvertFormat) {
 			log.Fatalf("Telegram bridge configured to convert .tgs files to '%s', but %s doesn't support it.", tgsConvertFormat, helper.LottieBackend())
 		}
 	}
+
 	return &Btelegram{Config: cfg, avatarMap: make(map[string]string)}
 }
 
 func (b *Btelegram) Connect() error {
 	var err error
+
 	b.Log.Info("Connecting")
+
 	b.c, err = tgbotapi.NewBotAPI(b.GetString("Token"))
 	if err != nil {
 		b.Log.Debugf("%#v", err)
 		return err
 	}
+
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 	updates := b.c.GetUpdatesChan(u)
 	b.Log.Info("Connection succeeded")
+
 	go b.handleRecv(updates)
+
 	return nil
 }
 
@@ -66,28 +73,38 @@ func (b *Btelegram) JoinChannel(channel config.ChannelInfo) error {
 
 func TGGetParseMode(b *Btelegram, username string, text string) (textout string, parsemode string) {
 	textout = username + text
+
 	if b.GetString("MessageFormat") == HTMLFormat {
 		b.Log.Debug("Using mode HTML")
+
 		parsemode = tgbotapi.ModeHTML
 	}
+
 	if b.GetString("MessageFormat") == "Markdown" {
 		b.Log.Debug("Using mode markdown")
+
 		parsemode = tgbotapi.ModeMarkdown
 	}
+
 	if b.GetString("MessageFormat") == MarkdownV2 {
 		b.Log.Debug("Using mode MarkdownV2")
+
 		parsemode = MarkdownV2
 	}
+
 	if strings.ToLower(b.GetString("MessageFormat")) == HTMLNick {
 		b.Log.Debug("Using mode HTML - nick only")
+
 		textout = username + html.EscapeString(text)
 		parsemode = tgbotapi.ModeHTML
 	}
+
 	return textout, parsemode
 }
 
 func (b *Btelegram) getIds(channel string) (int64, int, error) {
 	var chatid int64
+
 	topicid := 0
 
 	// get the chatid
@@ -97,23 +114,29 @@ func (b *Btelegram) getIds(channel string) (int64, int, error) {
 			b.Log.Errorf("Invalid channel format: %#v\n", channel)
 			return 0, 0, nil
 		}
+
 		id, err := strconv.ParseInt(s[0], 10, 64)
 		if err != nil {
 			return 0, 0, err
 		}
+
 		chatid = id
+
 		tid, err := strconv.Atoi(s[1])
 		if err != nil {
 			return 0, 0, err
 		}
+
 		topicid = tid
 	} else {
 		id, err := strconv.ParseInt(channel, 10, 64)
 		if err != nil {
 			return 0, 0, err
 		}
+
 		chatid = id
 	}
+
 	return chatid, topicid, nil
 }
 
@@ -142,7 +165,7 @@ func (b *Btelegram) Send(msg config.Message) (string, error) {
 	// Handle prefix hint for unthreaded messages.
 	if msg.ParentNotFound() {
 		msg.ParentID = ""
-		msg.Text = fmt.Sprintf("[reply]: %s", msg.Text)
+		msg.Text = "[reply]: " + msg.Text
 	}
 
 	var parentID int
@@ -184,15 +207,18 @@ func (b *Btelegram) getFileDirectURL(id string) string {
 	if err != nil {
 		return ""
 	}
+
 	return res
 }
 
 func (b *Btelegram) sendMessage(chatid int64, topicid int, username, text string, parentID int) (string, error) {
 	m := tgbotapi.NewMessage(chatid, "")
+
 	m.Text, m.ParseMode = TGGetParseMode(b, username, text)
 	if topicid != 0 {
-		m.BaseChat.MessageThreadID = topicid
+		m.MessageThreadID = topicid
 	}
+
 	m.ReplyToMessageID = parentID
 	m.DisableWebPagePreview = b.GetBool("DisableWebPagePreview")
 
@@ -200,6 +226,7 @@ func (b *Btelegram) sendMessage(chatid int64, topicid int, username, text string
 	if err != nil {
 		return "", err
 	}
+
 	return strconv.Itoa(res.MessageID), nil
 }
 
@@ -208,6 +235,7 @@ func (b *Btelegram) sendMediaFiles(msg *config.Message, chatid int64, threadid i
 	if len(media) == 0 {
 		return "", nil
 	}
+
 	mg := tgbotapi.MediaGroupConfig{
 		BaseChat: tgbotapi.BaseChat{
 			ChatID:           chatid,
@@ -217,6 +245,7 @@ func (b *Btelegram) sendMediaFiles(msg *config.Message, chatid int64, threadid i
 		},
 		Media: media,
 	}
+
 	messages, err := b.c.SendMediaGroup(mg)
 	if err != nil {
 		return "", err
@@ -231,6 +260,7 @@ func (b *Btelegram) intParentID(parentID string) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
 	return pid, nil
 }
 
@@ -242,5 +272,6 @@ func (b *Btelegram) cacheAvatar(msg *config.Message) (string, error) {
 		b.Log.Debugf("Added %s to %s in avatarMap", fi.SHA, msg.UserID)
 		b.avatarMap[msg.UserID] = fi.SHA
 	}
+
 	return "", nil
 }
