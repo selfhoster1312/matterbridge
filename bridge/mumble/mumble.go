@@ -25,6 +25,8 @@ import (
 )
 
 type Bmumble struct {
+	*bridge.Config
+
 	client             *gumble.Client
 	Nick               string
 	Host               string
@@ -35,8 +37,6 @@ type Bmumble struct {
 	serverConfigUpdate chan gumble.ServerConfigEvent
 	serverConfig       gumble.ServerConfigEvent
 	tlsConfig          tls.Config
-
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

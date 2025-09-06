@@ -17,16 +17,17 @@ import (
 )
 
 type Brocketchat struct {
+	sync.RWMutex
+	*bridge.Config
+
 	mh    *matterhook.Client
 	rh    *rockethook.Client
 	c     *realtime.Client
 	r     *rest.Client
 	cache *lru.Cache
-	*bridge.Config
 	messageChan chan models.Message
 	channelMap  map[string]string
 	user        *models.User
-	sync.RWMutex
 }
 
 const (

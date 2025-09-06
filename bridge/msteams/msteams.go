@@ -24,10 +24,11 @@ var (
 )
 
 type Bmsteams struct {
+	*bridge.Config
+
 	gc    *msgraph.GraphServiceRequestBuilder
 	ctx   context.Context
 	botID string
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

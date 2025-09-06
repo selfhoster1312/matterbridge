@@ -16,12 +16,13 @@ import (
 )
 
 type Bmattermost struct {
+	*bridge.Config
+
 	mh     *matterhook.Client
 	mc     *matterclient.Client
 	v6     bool
 	uuid   string
 	TeamID string
-	*bridge.Config
 	avatarMap      map[string]string
 	channelsMutex  sync.RWMutex
 	channelInfoMap map[string]*config.ChannelInfo

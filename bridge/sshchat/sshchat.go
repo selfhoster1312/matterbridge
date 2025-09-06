@@ -12,9 +12,10 @@ import (
 )
 
 type Bsshchat struct {
+	*bridge.Config
+
 	r *bufio.Scanner
 	w io.WriteCloser
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

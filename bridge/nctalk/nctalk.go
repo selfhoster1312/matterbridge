@@ -15,9 +15,10 @@ import (
 )
 
 type Btalk struct {
+	*bridge.Config
+
 	user  *user.TalkUser
 	rooms []Broom
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {

@@ -23,9 +23,10 @@ type Message struct {
 
 // Client for Rocketchat.
 type Client struct {
+	Config
+
 	In         chan Message
 	httpclient *http.Client
-	Config
 }
 
 // Config for client.

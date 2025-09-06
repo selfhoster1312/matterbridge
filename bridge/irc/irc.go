@@ -24,6 +24,8 @@ import (
 )
 
 type Birc struct {
+	*bridge.Config
+
 	i                                         *girc.Client
 	Nick                                      string
 	names                                     map[string][]string
@@ -32,8 +34,6 @@ type Birc struct {
 	FirstConnection, authDone                 bool
 	MessageDelay, MessageQueue, MessageLength int
 	channels                                  map[string]bool
-
-	*bridge.Config
 }
 
 func New(cfg *bridge.Config) bridge.Bridger {
