@@ -133,7 +133,6 @@ func (b *Birc) JoinChannel(channel config.ChannelInfo) error {
 	b.channels[channel.Name] = true
 	// need to check if we have nickserv auth done before joining channels
 	for !b.authDone {
-
 		time.Sleep(time.Second)
 	}
 

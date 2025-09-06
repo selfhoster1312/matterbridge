@@ -85,7 +85,6 @@ func (b *Btalk) JoinChannel(channel config.ChannelInfo) error {
 
 	go func() {
 		for msg := range c {
-
 			if msg.Error != nil {
 				b.Log.Errorf("Fatal message poll error: %s\n", msg.Error)
 
