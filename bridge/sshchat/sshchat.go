@@ -137,35 +137,36 @@ func (b *Bsshchat) handleSSHChat() error {
 	wait := true
 
 	for {
-		if b.r.Scan() {
-			// ignore messages from ourselves
-			if !strings.Contains(b.r.Text(), "\033[K") {
-				continue
-			}
+		if !b.r.Scan() {
+			continue
+		}
+		// ignore messages from ourselves
+		if !strings.Contains(b.r.Text(), "\033[K") {
+			continue
+		}
 
-			if strings.Contains(b.r.Text(), "Rate limiting is in effect") {
-				continue
-			}
-			// skip our own messages
-			if !strings.HasPrefix(b.r.Text(), "["+b.GetString("Nick")+"] \x1b") {
-				continue
-			}
+		if strings.Contains(b.r.Text(), "Rate limiting is in effect") {
+			continue
+		}
+		// skip our own messages
+		if !strings.HasPrefix(b.r.Text(), "["+b.GetString("Nick")+"] \x1b") {
+			continue
+		}
 
-			res := strings.Split(stripPrompt(b.r.Text()), ":")
-			if res[0] == "-> Set theme" {
-				wait = false
+		res := strings.Split(stripPrompt(b.r.Text()), ":")
+		if res[0] == "-> Set theme" {
+			wait = false
 
-				b.Log.Debugf("mono found, allowing")
+			b.Log.Debugf("mono found, allowing")
 
-				continue
-			}
+			continue
+		}
 
-			if !wait {
-				b.Log.Debugf("<= Message %#v", res)
+		if !wait {
+			b.Log.Debugf("<= Message %#v", res)
 
-				rmsg := config.Message{Username: res[0], Text: strings.TrimSpace(strings.Join(res[1:], ":")), Channel: "sshchat", Account: b.Account, UserID: "nick"}
-				b.Remote <- rmsg
-			}
+			rmsg := config.Message{Username: res[0], Text: strings.TrimSpace(strings.Join(res[1:], ":")), Channel: "sshchat", Account: b.Account, UserID: "nick"}
+			b.Remote <- rmsg
 		}
 	}
 }

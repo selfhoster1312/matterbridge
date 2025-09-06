@@ -85,7 +85,7 @@ func ConvertTgsToX(data *[]byte, outputFormat string, logger *logrus.Entry) erro
 func SupportsFormat(format string) bool {
 	switch format {
 	case "png":
-		fallthrough
+		return false
 	case "webp":
 		return true
 	default:
