@@ -5,9 +5,11 @@ jobs:
     name: golangci-lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
         with:
-          fetch-depth: 20
+          # For the moment golangci-lint uses the previous commit as reference
+          # with the `new-from-rev: HEAD~1` config
+          fetch-depth: 2
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v8
         with:
@@ -24,9 +26,8 @@ jobs:
       uses: actions/setup-go@v3
       with:
         go-version: ${{ matrix.go-version }}
-        stable: false
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5
       with:
           fetch-depth: 0
     - name: Test
