@@ -2,6 +2,7 @@ package bdiscord
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"

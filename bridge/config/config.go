@@ -325,7 +325,7 @@ func newConfigFromString(logger *logrus.Entry, input []byte, cfgtype string) *co
 	}
 
 	cfg := &BridgeValues{}
-	err := viper.Unmarshal(cfg)
+	err = viper.Unmarshal(cfg)
 	if err != nil {
 		logger.Fatalf("Failed to load the configuration: %s", err)
 	}

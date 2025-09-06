@@ -447,7 +447,7 @@ func (gw *Gateway) modifyMessage(msg *config.Message) {
 		}
 	}
 
-	err := modifyInMessageTengo(inMessage, msg)
+	err = modifyInMessageTengo(inMessage, msg)
 	if err != nil {
 		gw.logger.Errorf("Tengo.Message failed: %s", err)
 	}

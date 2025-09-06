@@ -1,7 +1,7 @@
 package bsteam
 
 import (
-	"fmt"
+	"errors"
 	"sync"
 	"time"
 

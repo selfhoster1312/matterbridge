@@ -435,7 +435,7 @@ func (b *Bmatrix) handleEdit(ev *matrix.Event, rmsg config.Message) bool {
 	}
 
 	var newContent SubTextMessage
-	err := interface2Struct(newContentInterface, &newContent)
+	err = interface2Struct(newContentInterface, &newContent)
 	if err != nil {
 		b.Log.Warnf("Couldn't parse 'm.new_content' object with value %#v", newContentInterface)
 		return false
