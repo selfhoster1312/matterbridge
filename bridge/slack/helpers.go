@@ -253,7 +253,7 @@ func (b *Bslack) getUsersInConversation(channelID string) ([]string, error) {
 		if err != nil {
 			err = handleRateLimit(b.Log, err)
 			if err != nil {
-				return channelMembers, fmt.Errorf("Could not retrieve users in channels: %#v", err)
+				return channelMembers, fmt.Errorf("could not retrieve users in channels: %#v", err)
 			}
 
 			continue

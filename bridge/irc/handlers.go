@@ -3,7 +3,7 @@ package birc
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -279,7 +279,7 @@ func (b *Birc) handlePrivMsg(client *girc.Client, event girc.Event) {
 			return
 		}
 
-		output, _ := ioutil.ReadAll(r)
+		output, _ := io.ReadAll(r)
 		rmsg.Text = string(output)
 	}
 

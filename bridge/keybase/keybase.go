@@ -1,7 +1,6 @@
 package bkeybase
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -81,7 +80,7 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 
 	if len(msg.Extra["file"]) > 0 {
 		// Upload a file
-		dir, err := ioutil.TempDir("", "matterbridge")
+		dir, err := os.MkdirTemp("", "matterbridge")
 		if err != nil {
 			return "", err
 		}
@@ -93,7 +92,7 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 			fcaption := f.(config.FileInfo).Comment
 			fpath := filepath.Join(dir, fname)
 
-			err = ioutil.WriteFile(fpath, fdata, 0600)
+			err = os.WriteFile(fpath, fdata, 0600)
 			if err != nil {
 				return "", err
 			}

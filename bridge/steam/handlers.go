@@ -105,7 +105,7 @@ func (b *Bsteam) handleLogOnFailed(e *steam.LogOnFailedEvent, myLoginInfo *steam
 		// TODO https://github.com/42wim/matterbridge/pull/630#discussion_r238103978
 		myLoginInfo.AuthCode = code
 	case steamlang.EResult_InvalidLoginAuthCode:
-		return fmt.Errorf("Steam guard: invalid login auth code: %#v ", e.Result)
+		return fmt.Errorf("steam guard: invalid login auth code: %#v ", e.Result)
 	default:
 		return fmt.Errorf("LogOnFailedEvent: %#v ", e.Result)
 		// TODO: Handle EResult_InvalidLoginAuthCode
