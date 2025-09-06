@@ -31,11 +31,14 @@ func (b *Bsshchat) Connect() error {
 	connHandler := func(r io.Reader, w io.WriteCloser) error {
 		b.r = bufio.NewScanner(r)
 		b.r.Scan()
+
 		b.w = w
 		if _, err := b.w.Write([]byte("/theme mono\r\n/quiet\r\n")); err != nil {
 			return err
 		}
+
 		close(connSignal) // Connection is established so we can signal the success.
+
 		return b.handleSSHChat()
 	}
 
@@ -52,7 +55,9 @@ func (b *Bsshchat) Connect() error {
 		return err
 	case <-connSignal:
 	}
+
 	b.Log.Info("Connection succeeded")
+
 	return nil
 }
 
@@ -69,18 +74,23 @@ func (b *Bsshchat) Send(msg config.Message) (string, error) {
 	if msg.Event == config.EventMsgDelete {
 		return "", nil
 	}
+
 	b.Log.Debugf("=> Receiving %#v", msg)
+
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
 			if _, err := b.w.Write([]byte(rmsg.Username + rmsg.Text + "\r\n")); err != nil {
 				b.Log.Errorf("Could not send extra message: %#v", err)
 			}
 		}
+
 		if len(msg.Extra["file"]) > 0 {
 			return b.handleUploadFile(&msg)
 		}
 	}
+
 	_, err := b.w.Write([]byte(msg.Username + msg.Text + "\r\n"))
+
 	return "", err
 }
 
@@ -112,6 +122,7 @@ func stripPrompt(s string) string {
 	if pos < 0 {
 		return s
 	}
+
 	return s[pos+3:]
 }
 
@@ -121,12 +132,14 @@ func (b *Bsshchat) handleSSHChat() error {
 		defer close(done)
 	*/
 	wait := true
+
 	for {
 		if b.r.Scan() {
 			// ignore messages from ourselves
 			if !strings.Contains(b.r.Text(), "\033[K") {
 				continue
 			}
+
 			if strings.Contains(b.r.Text(), "Rate limiting is in effect") {
 				continue
 			}
@@ -134,14 +147,19 @@ func (b *Bsshchat) handleSSHChat() error {
 			if !strings.HasPrefix(b.r.Text(), "["+b.GetString("Nick")+"] \x1b") {
 				continue
 			}
+
 			res := strings.Split(stripPrompt(b.r.Text()), ":")
 			if res[0] == "-> Set theme" {
 				wait = false
+
 				b.Log.Debugf("mono found, allowing")
+
 				continue
 			}
+
 			if !wait {
 				b.Log.Debugf("<= Message %#v", res)
+
 				rmsg := config.Message{Username: res[0], Text: strings.TrimSpace(strings.Join(res[1:], ":")), Channel: "sshchat", Account: b.Account, UserID: "nick"}
 				b.Remote <- rmsg
 			}
@@ -155,15 +173,18 @@ func (b *Bsshchat) handleUploadFile(msg *config.Message) (string, error) {
 		if fi.Comment != "" {
 			msg.Text += fi.Comment + ": "
 		}
+
 		if fi.URL != "" {
 			msg.Text = fi.URL
 			if fi.Comment != "" {
 				msg.Text = fi.Comment + ": " + fi.URL
 			}
 		}
+
 		if _, err := b.w.Write([]byte(msg.Username + msg.Text + "\r\n")); err != nil {
 			b.Log.Errorf("Could not send file message: %#v", err)
 		}
 	}
+
 	return "", nil
 }

@@ -61,25 +61,29 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	if b.useAutoWebhooks {
 		b.Log.Debug("Using automatic webhooks")
 	}
+
 	return b
 }
 
 func (b *Bdiscord) Connect() error {
 	var err error
+
 	token := b.GetString("Token")
 	b.Log.Info("Connecting")
+
 	if !strings.HasPrefix(b.GetString("Token"), "Bot ") {
 		token = "Bot " + b.GetString("Token")
 	}
 	// if we have a User token, remove the `Bot` prefix
 	if strings.HasPrefix(b.GetString("Token"), "User ") {
-		token = strings.Replace(b.GetString("Token"), "User ", "", -1)
+		token = strings.ReplaceAll(b.GetString("Token"), "User ", "")
 	}
 
 	b.c, err = discordgo.New(token)
 	if err != nil {
 		return err
 	}
+
 	b.Log.Info("Connection succeeded")
 	// Add privileged intent for guild member tracking. This is needed to track nicks
 	// for display names and @mention translation
@@ -90,20 +94,24 @@ func (b *Bdiscord) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	guilds, err := b.c.UserGuilds(100, "", "", false)
 	if err != nil {
 		return err
 	}
+
 	userinfo, err := b.c.User("@me")
 	if err != nil {
 		return err
 	}
-	serverName := strings.Replace(b.GetString("Server"), "ID:", "", -1)
+
+	serverName := strings.ReplaceAll(b.GetString("Server"), "ID:", "")
 	b.nick = userinfo.Username
 	b.userID = userinfo.ID
 
 	// Try and find this account's guild, and populate channels
 	b.channelsMutex.Lock()
+
 	for _, guild := range guilds {
 		// Skip, if the server name does not match the visible name or the ID
 		if guild.Name != serverName && guild.ID != serverName {
@@ -124,6 +132,7 @@ func (b *Bdiscord) Connect() error {
 
 		b.guildID = guild.ID
 	}
+
 	b.channelsMutex.Unlock()
 
 	// If we couldn't find a guild, we print extra debug information and return a nice error
@@ -133,6 +142,7 @@ func (b *Bdiscord) Connect() error {
 
 		// Print all of the possible server values
 		b.Log.Info("Possible server values:")
+
 		for _, guild := range guilds {
 			b.Log.Infof("\t- Server=%#v # by name", guild.Name)
 			b.Log.Infof("\t- Server=%#v # by ID", guild.ID)
@@ -156,7 +166,8 @@ func (b *Bdiscord) Connect() error {
 		message += "You can get similar \"webhook editing\" behaviour by replacing this line with `AutoWebhooks=true`. "
 		message += "If you rely on the old-OLD (non-editing) behaviour, can move the WebhookURL to specific channel sections."
 		b.Log.Errorln(message)
-		return fmt.Errorf("use of removed WebhookURL setting")
+
+		return errors.New("use of removed WebhookURL setting")
 	}
 
 	if b.GetInt("debuglevel") == 2 {
@@ -169,6 +180,7 @@ func (b *Bdiscord) Connect() error {
 	b.transmitter.Log = b.Log
 
 	var webhookChannelIDs []string
+
 	for _, channel := range b.Channels {
 		channelID := b.getChannelID(channel.Name) // note(qaisjp): this readlocks channelsMutex
 
@@ -179,6 +191,7 @@ func (b *Bdiscord) Connect() error {
 			if b.useAutoWebhooks {
 				webhookChannelIDs = append(webhookChannelIDs, channelID)
 			}
+
 			continue
 		}
 
@@ -206,17 +219,21 @@ func (b *Bdiscord) Connect() error {
 	// Obtaining guild members and initializing nickname mapping.
 	b.membersMutex.Lock()
 	defer b.membersMutex.Unlock()
+
 	members, err := b.c.GuildMembers(b.guildID, "", 1000)
 	if err != nil {
 		b.Log.Error("Error obtaining server members: ", err)
 		return err
 	}
+
 	for _, member := range members {
 		if member == nil {
 			b.Log.Warnf("Skipping missing information for a user.")
 			continue
 		}
+
 		b.userMemberMap[member.User.ID] = member
+
 		b.nickMemberMap[member.User.Username] = member
 		if member.Nick != "" {
 			b.nickMemberMap[member.Nick] = member
@@ -231,6 +248,7 @@ func (b *Bdiscord) Connect() error {
 	b.c.AddHandler(b.memberAdd)
 	b.c.AddHandler(b.memberRemove)
 	b.c.AddHandler(b.memberUpdate)
+
 	if b.GetInt("debuglevel") == 1 {
 		b.c.AddHandler(b.messageEvent)
 	}
@@ -247,6 +265,7 @@ func (b *Bdiscord) JoinChannel(channel config.ChannelInfo) error {
 	defer b.channelsMutex.Unlock()
 
 	b.channelInfoMap[channel.ID] = &channel
+
 	return nil
 }
 
@@ -263,6 +282,7 @@ func (b *Bdiscord) Send(msg config.Message) (string, error) {
 			err := b.c.ChannelTyping(channelID)
 			return "", err
 		}
+
 		return "", nil
 	}
 
@@ -294,7 +314,9 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 		if msg.ID == "" {
 			return "", nil
 		}
+
 		err := b.c.ChannelMessageDelete(channelID, msg.ID)
+
 		return "", err
 	}
 
@@ -305,8 +327,9 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 		}
 
 		if fi, ok := b.cache.Get(cFileUpload + msg.ID); ok {
-			err := b.c.ChannelMessageDelete(channelID, fi.(string)) // nolint:forcetypeassert
+			err := b.c.ChannelMessageDelete(channelID, fi.(string)) //nolint:forcetypeassert
 			b.cache.Remove(cFileUpload + msg.ID)
+
 			return "", err
 		}
 
@@ -332,10 +355,12 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 	if msg.ID != "" {
 		// Exploit that a discord message ID is actually just a large number, and we encode a list of IDs by separating them with ";".
 		msgIds := strings.Split(msg.ID, ";")
+
 		msgParts := helper.ClipOrSplitMessage(b.replaceUserMentions(msg.Text), MessageLength, b.GetString("MessageClipped"), len(msgIds))
 		for len(msgParts) < len(msgIds) {
 			msgParts = append(msgParts, "((obsoleted by edit))")
 		}
+
 		for i := range msgParts {
 			// In case of split-messages where some parts remain the same (i.e. only a typo-fix in a huge message), this causes some noop-updates.
 			// TODO: Optimize away noop-updates of un-edited messages
@@ -345,6 +370,7 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 				return "", err
 			}
 		}
+
 		return msg.ID, nil
 	}
 
@@ -370,6 +396,7 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 		if err != nil {
 			return "", err
 		}
+
 		msgIds = append(msgIds, res.ID)
 	}
 
@@ -391,6 +418,7 @@ func (b *Bdiscord) handleUploadFile(msg *config.Message, channelID string) (stri
 			Files:           []*discordgo.File{&file},
 			AllowedMentions: b.getAllowedMentions(),
 		}
+
 		res, err := b.c.ChannelMessageSendComplex(channelID, &m)
 		if err != nil {
 			return "", fmt.Errorf("file upload failed: %s", err)

@@ -28,16 +28,20 @@ func DownloadFile(url string) (*[]byte, error) {
 // DownloadFileAuth downloads the given URL using the specified authentication token.
 func DownloadFileAuth(url string, auth string) (*[]byte, error) {
 	var buf bytes.Buffer
+
 	client := &http.Client{
 		Timeout: time.Second * 5,
 	}
-	req, err := http.NewRequest("GET", url, nil)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if auth != "" {
 		req.Header.Add("Authorization", auth)
 	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -45,16 +49,18 @@ func DownloadFileAuth(url string, auth string) (*[]byte, error) {
 	defer resp.Body.Close()
 	io.Copy(&buf, resp.Body)
 	data := buf.Bytes()
+
 	return &data, nil
 }
 
 // DownloadFileAuthRocket downloads the given URL using the specified Rocket user ID and authentication token.
 func DownloadFileAuthRocket(url, token, userID string) (*[]byte, error) {
 	var buf bytes.Buffer
+
 	client := &http.Client{
 		Timeout: time.Second * 5,
 	}
-	req, err := http.NewRequest("GET", url, nil)
+	req, err := http.NewRequest(http.MethodGet, url, nil)
 
 	req.Header.Add("X-Auth-Token", token)
 	req.Header.Add("X-User-Id", userID)
@@ -62,13 +68,16 @@ func DownloadFileAuthRocket(url, token, userID string) (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
+
 	_, err = io.Copy(&buf, resp.Body)
 	data := buf.Bytes()
+
 	return &data, err
 }
 
@@ -85,6 +94,7 @@ func GetSubLines(message string, maxLineLength int, clippingMessage string) []st
 	}
 
 	var lines []string
+
 	for _, line := range strings.Split(strings.TrimSpace(message), "\n") {
 		if line == "" {
 			// Prevent sending empty messages, so we'll skip this line
@@ -101,13 +111,17 @@ func GetSubLines(message string, maxLineLength int, clippingMessage string) []st
 		// Before touching the splitting logic below please ensure that you PROPERLY
 		// understand how strings, runes and range loops over strings work in Go.
 		// A good place to start is to read https://blog.golang.org/strings. :-)
-		var splitStart int
-		var startOfPreviousRune int
+		var (
+			splitStart          int
+			startOfPreviousRune int
+		)
+
 		for i := range line {
 			if i-splitStart > maxLineLength-len([]byte(clippingMessage)) {
 				lines = append(lines, line[splitStart:startOfPreviousRune]+clippingMessage)
 				splitStart = startOfPreviousRune
 			}
+
 			startOfPreviousRune = i
 		}
 		// This last append is safe to do without looking at the remaining byte-length
@@ -115,12 +129,14 @@ func GetSubLines(message string, maxLineLength int, clippingMessage string) []st
 		// the byte-length of the clipping message.
 		lines = append(lines, line[splitStart:])
 	}
+
 	return lines
 }
 
 // HandleExtra manages the supplementary details stored inside a message's 'Extra' field map.
 func HandleExtra(msg *config.Message, general *config.Protocol) []config.Message {
 	extra := msg.Extra
+
 	rmsg := []config.Message{}
 	for _, f := range extra[config.EventFileFailureSize] {
 		fi := f.(config.FileInfo)
@@ -132,6 +148,7 @@ func HandleExtra(msg *config.Message, general *config.Protocol) []config.Message
 			Account:  msg.Account,
 		})
 	}
+
 	return rmsg
 }
 
@@ -140,6 +157,7 @@ func GetAvatar(av map[string]string, userid string, general *config.Protocol) st
 	if sha, ok := av[userid]; ok {
 		return general.MediaServerDownload + "/" + sha + "/" + userid + ".png"
 	}
+
 	return ""
 }
 
@@ -154,12 +172,15 @@ func HandleDownloadSize(logger *logrus.Entry, msg *config.Message, name string, 
 				logger.Errorf("incorrect regexp %s for %s", entry, msg.Account)
 				continue
 			}
+
 			if re.MatchString(name) {
 				return fmt.Errorf("Matching blacklist %s. Not downloading %s", entry, name)
 			}
 		}
 	}
+
 	logger.Debugf("Trying to download %#v with size %#v", name, size)
+
 	if int(size) > general.MediaDownloadSize {
 		msg.Event = config.EventFileFailureSize
 		msg.Extra[msg.Event] = append(msg.Extra[msg.Event], config.FileInfo{
@@ -167,8 +188,10 @@ func HandleDownloadSize(logger *logrus.Entry, msg *config.Message, name string, 
 			Comment: msg.Text,
 			Size:    size,
 		})
+
 		return fmt.Errorf("File %#v to large to download (%#v). MediaDownloadSize is %#v", name, size, general.MediaDownloadSize)
 	}
+
 	return nil
 }
 
@@ -180,10 +203,13 @@ func HandleDownloadData(logger *logrus.Entry, msg *config.Message, name, comment
 // HandleDownloadData adds the data for a remote file into a Matterbridge gateway message.
 func HandleDownloadData2(logger *logrus.Entry, msg *config.Message, name, id, comment, url string, data *[]byte, general *config.Protocol) {
 	var avatar bool
+
 	logger.Debugf("Download OK %#v %#v", name, len(*data))
+
 	if msg.Event == config.EventAvatarDownload {
 		avatar = true
 	}
+
 	msg.Extra["file"] = append(msg.Extra["file"], config.FileInfo{
 		Name:     name,
 		Data:     data,
@@ -224,19 +250,23 @@ func ClipMessage(text string, length int, clippingMessage string) string {
 				break
 			}
 		}
+
 		text += clippingMessage
 	}
+
 	return text
 }
 
 func ClipOrSplitMessage(text string, length int, clippingMessage string, splitMax int) []string {
 	var msgParts []string
+
 	remainingText := text
 	// Invariant of this splitting loop: No text is lost (msgParts+remainingText is the original text),
 	// and all parts is guaranteed to satisfy the length requirement.
 	for len(msgParts) < splitMax-1 && len(remainingText) > length {
 		// Decision: The text needs to be split (again).
 		var chunk string
+
 		wasted := 0
 		// The longest UTF-8 encoding of a valid rune is 4 bytes (0xF4 0x8F 0xBF 0xBF, encoding U+10FFFF),
 		// so we should never need to waste 4 or more bytes at a time.
@@ -252,7 +282,9 @@ func ClipOrSplitMessage(text string, length int, clippingMessage string, splitMa
 		msgParts = append(msgParts, chunk)
 		remainingText = remainingText[len(chunk):]
 	}
+
 	msgParts = append(msgParts, ClipMessage(remainingText, length, clippingMessage))
+
 	return msgParts
 }
 
@@ -267,21 +299,27 @@ func ParseMarkdown(input string) string {
 	res := string(parsedMarkdown)
 	res = strings.TrimPrefix(res, "<p>")
 	res = strings.TrimSuffix(res, "</p>\n")
+
 	return res
 }
 
 // ConvertWebPToPNG converts input data (which should be WebP format) to PNG format
 func ConvertWebPToPNG(data *[]byte) error {
 	r := bytes.NewReader(*data)
+
 	m, err := webp.Decode(r)
 	if err != nil {
 		return err
 	}
+
 	var output []byte
+
 	w := bytes.NewBuffer(output)
 	if err := png.Encode(w, m); err != nil {
 		return err
 	}
+
 	*data = w.Bytes()
+
 	return nil
 }

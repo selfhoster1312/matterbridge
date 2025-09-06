@@ -30,12 +30,12 @@ func TestIgnoreEvent(t *testing.T) {
 			output: false,
 		},
 	}
+
 	gw := &Gateway{}
 	for testname, testcase := range eventTests {
 		output := gw.ignoreEvent(testcase.input, testcase.dest)
 		assert.Equalf(t, testcase.output, output, "case '%s' failed", testname)
 	}
-
 }
 
 func TestExtractNick(t *testing.T) {
@@ -71,5 +71,4 @@ func TestExtractNick(t *testing.T) {
 		assert.Equalf(t, testcase.resultUsername, resultUsername, "case '%s' failed", testname)
 		assert.Equalf(t, testcase.resultText, resultText, "case '%s' failed", testname)
 	}
-
 }

@@ -75,8 +75,10 @@ func New(cfg *bridge.Config) bridge.Bridger {
 		cfg.Log.Warn("Non-bot token detected. It is STRONGLY recommended to use a proper bot-token instead.")
 		cfg.Log.Warn("Legacy tokens may be deprecated by Slack at short notice. See the Matterbridge GitHub wiki for a migration guide.")
 		cfg.Log.Warn("See https://github.com/42wim/matterbridge/wiki/Slack-bot-setup")
+
 		return NewLegacy(cfg)
 	}
+
 	return newBridge(cfg)
 }
 
@@ -85,11 +87,13 @@ func newBridge(cfg *bridge.Config) *Bslack {
 	if err != nil {
 		cfg.Log.Fatalf("Could not create LRU cache for Slack bridge: %v", err)
 	}
+
 	b := &Bslack{
 		Config: cfg,
 		uuid:   xid.New().String(),
 		cache:  newCache,
 	}
+
 	return b
 }
 
@@ -117,6 +121,7 @@ func (b *Bslack) Connect() error {
 		b.rtm = b.sc.NewRTM()
 		go b.rtm.ManageConnection()
 		go b.handleSlack()
+
 		return nil
 	}
 
@@ -132,12 +137,15 @@ func (b *Bslack) Connect() error {
 		b.Log.Info("Using specified webhook for outgoing messages.")
 		b.mh.Url = b.GetString(outgoingWebhookConfig)
 	}
+
 	if b.GetString(incomingWebhookConfig) != "" {
 		b.Log.Info("Setting up local webhook for incoming messages.")
 		b.mh.BindAddress = b.GetString(incomingWebhookConfig)
+
 		b.mh.DisableServer = false
 		go b.handleSlack()
 	}
+
 	return nil
 }
 
@@ -183,6 +191,7 @@ func (b *Bslack) JoinChannel(channel config.ChannelInfo) error {
 	if !channelInfo.IsMember && !b.legacy {
 		return fmt.Errorf("slack integration that matterbridge is using is not member of channel '%s', please add it manually", channelInfo.Name)
 	}
+
 	return nil
 }
 
@@ -208,6 +217,7 @@ func (b *Bslack) Send(msg config.Message) (string, error) {
 	if b.GetString(outgoingWebhookConfig) != "" && b.GetString(tokenConfig) == "" {
 		return "", b.sendWebhook(msg)
 	}
+
 	return b.sendRTM(msg)
 }
 
@@ -225,15 +235,17 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 	if msg.Extra != nil {
 		// This sends a message only if we received a config.EVENT_FILE_FAILURE_SIZE.
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-			rmsg := rmsg // scopelint
+			// scopelint
 			iconURL := config.GetIconURL(&rmsg, b.GetString(iconURLConfig))
+
 			matterMessage := matterhook.OMessage{
 				IconURL:  iconURL,
 				Channel:  msg.Channel,
 				UserName: rmsg.Username,
 				Text:     rmsg.Text,
 			}
-			if err := b.mh.Send(matterMessage); err != nil {
+			err := b.mh.Send(matterMessage)
+			if err != nil {
 				b.Log.Errorf("Failed to send message: %v", err)
 			}
 		}
@@ -245,6 +257,7 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 				b.Log.Errorf("Received a file with unexpected content: %#v", f)
 				continue
 			}
+
 			if fi.URL != "" {
 				msg.Text += " " + fi.URL
 			}
@@ -258,6 +271,7 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 	}
 
 	iconURL := config.GetIconURL(&msg, b.GetString(iconURLConfig))
+
 	matterMessage := matterhook.OMessage{
 		IconURL:     iconURL,
 		Attachments: attachs,
@@ -268,10 +282,13 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 	if msg.Avatar != "" {
 		matterMessage.IconURL = msg.Avatar
 	}
-	if err := b.mh.Send(matterMessage); err != nil {
+	err := b.mh.Send(matterMessage)
+
+	if err != nil {
 		b.Log.Errorf("Failed to send message via webhook: %#v", err)
 		return err
 	}
+
 	return nil
 }
 
@@ -285,10 +302,12 @@ func (b *Bslack) sendRTM(msg config.Message) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("could not send message: %v", err)
 	}
+
 	if msg.Event == config.EventUserTyping {
 		if b.GetBool("ShowUserTyping") {
 			b.rtm.SendMessage(b.rtm.NewTypingMessage(channelInfo.ID))
 		}
+
 		return "", nil
 	}
 
@@ -302,7 +321,7 @@ func (b *Bslack) sendRTM(msg config.Message) (string, error) {
 	// Handle prefix hint for unthreaded messages.
 	if msg.ParentNotFound() {
 		msg.ParentID = ""
-		msg.Text = fmt.Sprintf("[thread]: %s", msg.Text)
+		msg.Text = "[thread]: " + msg.Text
 	}
 
 	// Handle message deletions.
@@ -326,6 +345,7 @@ func (b *Bslack) sendRTM(msg config.Message) (string, error) {
 		for i := range extraMsgs {
 			rmsg := &extraMsgs[i]
 			rmsg.Text = rmsg.Username + rmsg.Text
+
 			_, err = b.postMessage(rmsg, channelInfo)
 			if err != nil {
 				b.Log.Error(err)
@@ -352,11 +372,13 @@ func (b *Bslack) updateTopicOrPurpose(msg *config.Message, channelInfo *slack.Ch
 		b.Log.Errorf("Unhandled type received from extractTopicOrPurpose: %s", incomingChangeType)
 		return nil
 	}
+
 	for {
 		_, err := updateFunc(channelInfo.ID, text)
 		if err == nil {
 			return nil
 		}
+
 		if err = handleRateLimit(b.Log, err); err != nil {
 			return err
 		}
@@ -409,6 +431,7 @@ func (b *Bslack) editMessage(msg *config.Message, channelInfo *slack.Channel) (b
 	if msg.ID == "" {
 		return false, nil
 	}
+
 	messageOptions := b.prepareMessageOptions(msg)
 	for {
 		_, _, _, err := b.rtm.UpdateMessage(channelInfo.ID, msg.ID, messageOptions...)
@@ -428,6 +451,7 @@ func (b *Bslack) postMessage(msg *config.Message, channelInfo *slack.Channel) (s
 	if msg.Text == "" {
 		return "", nil
 	}
+
 	messageOptions := b.prepareMessageOptions(msg)
 	for {
 		_, id, err := b.rtm.PostMessage(channelInfo.ID, messageOptions...)
@@ -445,12 +469,14 @@ func (b *Bslack) postMessage(msg *config.Message, channelInfo *slack.Channel) (s
 // uploadFile handles native upload of files
 func (b *Bslack) uploadFile(msg *config.Message, channelID string) (string, error) {
 	var messageID string
+
 	for _, f := range msg.Extra["file"] {
 		fi, ok := f.(config.FileInfo)
 		if !ok {
 			b.Log.Errorf("Received a file with unexpected content: %#v", f)
 			continue
 		}
+
 		if msg.Text == fi.Comment {
 			msg.Text = ""
 		}
@@ -459,10 +485,12 @@ func (b *Bslack) uploadFile(msg *config.Message, channelID string) (string, erro
 		ts := time.Now()
 		b.Log.Debugf("Adding file %s to cache at %s with timestamp", fi.Name, ts.String())
 		b.cache.Add("filename"+fi.Name, ts)
-		initialComment := fmt.Sprintf("File from %s", msg.Username)
+
+		initialComment := "File from " + msg.Username
 		if fi.Comment != "" {
-			initialComment += fmt.Sprintf(" with comment: %s", fi.Comment)
+			initialComment += " with comment: " + fi.Comment
 		}
+
 		res, err := b.sc.UploadFile(slack.FileUploadParameters{
 			Reader:          bytes.NewReader(*fi.Data),
 			Filename:        fi.Name,
@@ -474,6 +502,7 @@ func (b *Bslack) uploadFile(msg *config.Message, channelID string) (string, erro
 			b.Log.Errorf("uploadfile %#v", err)
 			return "", err
 		}
+
 		if res.ID != "" {
 			b.Log.Debugf("Adding file ID %s to cache with timestamp %s", res.ID, ts.String())
 			b.cache.Add("file"+res.ID, ts)
@@ -482,11 +511,13 @@ func (b *Bslack) uploadFile(msg *config.Message, channelID string) (string, erro
 			if v, ok := res.Shares.Private[channelID]; ok && len(v) > 0 {
 				messageID = v[0].Ts
 			}
+
 			if v, ok := res.Shares.Public[channelID]; ok && len(v) > 0 {
 				messageID = v[0].Ts
 			}
 		}
 	}
+
 	return messageID, nil
 }
 
@@ -495,9 +526,11 @@ func (b *Bslack) prepareMessageOptions(msg *config.Message) []slack.MsgOption {
 	if b.GetBool(useNickPrefixConfig) {
 		params.AsUser = true
 	}
+
 	params.Username = msg.Username
 	params.LinkNames = 1 // replace mentions
 	params.IconURL = config.GetIconURL(msg, b.GetString(iconURLConfig))
+
 	params.ThreadTimestamp = msg.ParentID
 	if msg.Avatar != "" {
 		params.IconURL = msg.Avatar
@@ -514,6 +547,7 @@ func (b *Bslack) prepareMessageOptions(msg *config.Message) []slack.MsgOption {
 	}
 
 	var opts []slack.MsgOption
+
 	opts = append(opts,
 		// provide regular text field (fallback used in Slack notifications, etc.)
 		slack.MsgOptionText(msg.Text, false),
@@ -529,11 +563,13 @@ func (b *Bslack) prepareMessageOptions(msg *config.Message) []slack.MsgOption {
 	)
 	opts = append(opts, slack.MsgOptionAttachments(attachments...))
 	opts = append(opts, slack.MsgOptionPostMessageParameters(params))
+
 	return opts
 }
 
 func (b *Bslack) createAttach(extra map[string][]interface{}) []slack.Attachment {
 	var attachements []slack.Attachment
+
 	for _, v := range extra["attachments"] {
 		entry := v.(map[string]interface{})
 		s := slack.Attachment{
@@ -553,6 +589,7 @@ func (b *Bslack) createAttach(extra map[string][]interface{}) []slack.Attachment
 		}
 		attachements = append(attachements, s)
 	}
+
 	return attachements
 }
 
@@ -562,5 +599,6 @@ func extractStringField(data map[string]interface{}, field string) string {
 			return value
 		}
 	}
+
 	return ""
 }

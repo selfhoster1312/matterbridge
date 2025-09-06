@@ -23,13 +23,15 @@ type Bkeybase struct {
 // New initializes Bkeybase object and sets team
 func New(cfg *bridge.Config) bridge.Bridger {
 	b := &Bkeybase{Config: cfg}
-	b.team = b.Config.GetString("Team")
+	b.team = b.GetString("Team")
+
 	return b
 }
 
 // Connect starts keybase API and listener loop
 func (b *Bkeybase) Connect() error {
 	var err error
+
 	b.Log.Infof("Connecting %s", b.GetString("Team"))
 
 	// use default keybase location (`keybase`)
@@ -37,9 +39,12 @@ func (b *Bkeybase) Connect() error {
 	if err != nil {
 		return err
 	}
+
 	b.user = b.kbc.GetUsername()
 	b.Log.Info("Connection succeeded")
+
 	go b.handleKeybase()
+
 	return nil
 }
 
@@ -53,7 +58,9 @@ func (b *Bkeybase) JoinChannel(channel config.ChannelInfo) error {
 	if _, err := b.kbc.JoinChannel(b.team, channel.Name); err != nil {
 		return err
 	}
+
 	b.channel = channel.Name
+
 	return nil
 }
 
@@ -86,7 +93,8 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 			fcaption := f.(config.FileInfo).Comment
 			fpath := filepath.Join(dir, fname)
 
-			if err = ioutil.WriteFile(fpath, fdata, 0600); err != nil {
+			err = ioutil.WriteFile(fpath, fdata, 0600)
+			if err != nil {
 				return "", err
 			}
 
@@ -98,9 +106,11 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 
 	// Send regular message
 	text := msg.Username + msg.Text
+
 	resp, err := b.kbc.SendMessageByTeamName(b.team, &b.channel, text)
 	if err != nil {
 		return "", err
 	}
+
 	return strconv.Itoa(int(*resp.Result.MessageID)), err
 }

@@ -1,4 +1,4 @@
-//Package matterhook provides interaction with mattermost incoming/outgoing webhooks
+// Package matterhook provides interaction with mattermost incoming/outgoing webhooks
 package matterhook
 
 import (
@@ -73,14 +73,17 @@ func New(url string, config Config) *Client {
 	tr := &http.Transport{
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: config.InsecureSkipVerify}, //nolint:gosec
 	}
+
 	c.httpclient = &http.Client{Transport: tr}
 	if !c.DisableServer {
 		_, _, err := net.SplitHostPort(c.BindAddress)
 		if err != nil {
 			log.Fatalf("incorrect bindaddress %s", c.BindAddress)
 		}
+
 		go c.StartServer()
 	}
+
 	return c
 }
 
@@ -95,45 +98,59 @@ func (c *Client) StartServer() {
 		Addr:         c.BindAddress,
 	}
 	log.Printf("Listening on http://%v...\n", c.BindAddress)
-	if err := srv.ListenAndServe(); err != nil {
+	err := srv.ListenAndServe()
+
+	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 // ServeHTTP implementation.
 func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		log.Println("invalid " + r.Method + " connection from " + r.RemoteAddr)
 		http.NotFound(w, r)
+
 		return
 	}
+
 	msg := IMessage{}
+
 	err := r.ParseForm()
 	if err != nil {
 		log.Println(err)
 		http.NotFound(w, r)
+
 		return
 	}
 	defer r.Body.Close()
+
 	decoder := schema.NewDecoder()
+
 	err = decoder.Decode(&msg, r.PostForm)
 	if err != nil {
 		log.Println(err)
 		http.NotFound(w, r)
+
 		return
 	}
+
 	if msg.Token == "" {
 		log.Println("no token from " + r.RemoteAddr)
 		http.NotFound(w, r)
+
 		return
 	}
+
 	if c.Token != "" {
 		if msg.Token != c.Token {
 			log.Println("invalid token " + msg.Token + " from " + r.RemoteAddr)
 			http.NotFound(w, r)
+
 			return
 		}
 	}
+
 	c.In <- msg
 }
 
@@ -143,6 +160,7 @@ func (c *Client) Receive() IMessage {
 	for msg := range c.In {
 		return msg
 	}
+
 	return msg
 }
 
@@ -152,6 +170,7 @@ func (c *Client) Send(msg OMessage) error {
 	if err != nil {
 		return err
 	}
+
 	resp, err := c.httpclient.Post(c.Url, "application/json", bytes.NewReader(buf))
 	if err != nil {
 		return err
@@ -161,8 +180,9 @@ func (c *Client) Send(msg OMessage) error {
 	// Read entire body to completion to re-use keep-alive connections.
 	io.Copy(ioutil.Discard, resp.Body)
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
+
 	return nil
 }

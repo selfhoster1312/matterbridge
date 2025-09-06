@@ -161,10 +161,12 @@ func maketestRouter(input []byte) *Router {
 	logger := logrus.New()
 	logger.SetOutput(ioutil.Discard)
 	cfg := config.NewConfigFromString(logger, input)
+
 	r, err := NewRouter(logger, cfg, bridgemap.FullMap)
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return r
 }
 
@@ -190,6 +192,7 @@ func TestNewRouter(t *testing.T) {
 
 func TestGetDestChannel(t *testing.T) {
 	r := maketestRouter(testconfig2)
+
 	msg := &config.Message{Text: "test", Channel: "general", Account: "discord.test", Gateway: "bridge1", Protocol: "discord", Username: "test"}
 	for _, br := range r.Gateways["bridge1"].Bridges {
 		switch br.Account {
@@ -219,15 +222,20 @@ func TestGetDestChannel(t *testing.T) {
 
 func TestGetDestChannelAdvanced(t *testing.T) {
 	r := maketestRouter(testconfig3)
+
 	var msgs []*config.Message
+
 	i := 0
+
 	for _, gw := range r.Gateways {
 		for _, channel := range gw.Channels {
 			msgs = append(msgs, &config.Message{Text: "text" + strconv.Itoa(i), Channel: channel.Name, Account: channel.Account, Gateway: gw.Name, Username: "user" + strconv.Itoa(i)})
 			i++
 		}
 	}
+
 	hits := make(map[string]int)
+
 	for _, gw := range r.Gateways {
 		for _, br := range gw.Bridges {
 			for _, msg := range msgs {
@@ -236,11 +244,13 @@ func TestGetDestChannelAdvanced(t *testing.T) {
 					assert.Equal(t, []config.ChannelInfo(nil), channels)
 					continue
 				}
+
 				switch gw.Name {
 				case "bridge":
 					if (msg.Channel == "#main" || msg.Channel == "-1111111111111" || msg.Channel == "irc") &&
 						(msg.Account == ircTestAccount || msg.Account == tgTestAccount || msg.Account == slackTestAccount) {
 						hits[gw.Name]++
+
 						switch br.Account {
 						case ircTestAccount:
 							assert.Equal(t, []config.ChannelInfo{{
@@ -275,6 +285,7 @@ func TestGetDestChannelAdvanced(t *testing.T) {
 					if (msg.Channel == "#main-help" || msg.Channel == "--444444444444") &&
 						(msg.Account == ircTestAccount || msg.Account == tgTestAccount) {
 						hits[gw.Name]++
+
 						switch br.Account {
 						case ircTestAccount:
 							assert.Equal(t, []config.ChannelInfo{{
@@ -300,6 +311,7 @@ func TestGetDestChannelAdvanced(t *testing.T) {
 					if (msg.Channel == "#main-telegram" || msg.Channel == "--333333333333") &&
 						(msg.Account == ircTestAccount || msg.Account == tgTestAccount) {
 						hits[gw.Name]++
+
 						switch br.Account {
 						case ircTestAccount:
 							assert.Equal(t, []config.ChannelInfo{{
@@ -326,7 +338,9 @@ func TestGetDestChannelAdvanced(t *testing.T) {
 						assert.Equal(t, []config.ChannelInfo(nil), channels)
 						continue
 					}
+
 					hits[gw.Name]++
+
 					switch br.Account {
 					case ircTestAccount:
 						assert.Len(t, channels, 2)
@@ -369,6 +383,7 @@ func TestGetDestChannelAdvanced(t *testing.T) {
 			}
 		}
 	}
+
 	assert.Equal(t, map[string]int{"bridge3": 4, "bridge": 9, "announcements": 3, "bridge2": 4}, hits)
 }
 
@@ -393,6 +408,7 @@ func (s *ignoreTestSuite) TestIgnoreTextEmpty() {
 	extraFile := make(map[string][]interface{})
 	extraAttach := make(map[string][]interface{})
 	extraFailure := make(map[string][]interface{})
+
 	extraFile["file"] = append(extraFile["file"], config.FileInfo{})
 	extraAttach["attachments"] = append(extraAttach["attachments"], []string{})
 	extraFailure[config.EventFileFailureSize] = append(extraFailure[config.EventFileFailureSize], config.FileInfo{})
@@ -500,7 +516,7 @@ func (s *ignoreTestSuite) TestIgnoreNicks() {
 
 func BenchmarkTengo(b *testing.B) {
 	msg := &config.Message{Username: "user", Text: "blah testing", Account: "protocol.account", Channel: "mychannel"}
-	for n := 0; n < b.N; n++ {
+	for range b.N {
 		err := modifyInMessageTengo("bench.tengo", msg)
 		if err != nil {
 			return

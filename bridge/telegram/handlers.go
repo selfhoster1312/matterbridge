@@ -27,7 +27,7 @@ func (b *Btelegram) handleUpdate(rmsg *config.Message, message, posted, edited *
 
 			_, err := b.Send(config.Message{
 				Channel: chatID,
-				Text:    fmt.Sprintf("ID of this chat: %s", chatID),
+				Text:    "ID of this chat: " + chatID,
 			})
 			if err != nil {
 				b.Log.Warnf("Unable to send chatID to %s", chatID)
@@ -43,6 +43,7 @@ func (b *Btelegram) handleUpdate(rmsg *config.Message, message, posted, edited *
 		message = edited
 		rmsg.Text = rmsg.Text + message.Text + b.GetString("EditSuffix")
 	}
+
 	return message
 }
 
@@ -76,6 +77,7 @@ func (b *Btelegram) handleForwarded(rmsg *config.Message, message *tgbotapi.Mess
 	if b.GetBool("UseFirstName") {
 		usernameForward = message.ForwardFrom.FirstName
 	}
+
 	if b.GetBool("UseFullName") {
 		usernameForward = message.ForwardFrom.FirstName + " " + message.ForwardFrom.LastName
 	}
@@ -99,13 +101,16 @@ func (b *Btelegram) handleQuoting(rmsg *config.Message, message *tgbotapi.Messag
 	// Used to check if the message was a reply to the root topic
 	if message.ReplyToMessage != nil && (!message.IsTopicMessage || message.ReplyToMessage.MessageID != message.MessageThreadID) { //nolint:nestif
 		usernameReply := ""
+
 		if message.ReplyToMessage.From != nil {
 			if b.GetBool("UseFirstName") {
 				usernameReply = message.ReplyToMessage.From.FirstName
 			}
+
 			if b.GetBool("UseFullName") {
 				usernameReply = message.ReplyToMessage.From.FirstName + " " + message.ReplyToMessage.From.LastName
 			}
+
 			if usernameReply == "" {
 				usernameReply = message.ReplyToMessage.From.UserName
 				if usernameReply == "" {
@@ -113,14 +118,17 @@ func (b *Btelegram) handleQuoting(rmsg *config.Message, message *tgbotapi.Messag
 				}
 			}
 		}
+
 		if usernameReply == "" {
 			usernameReply = unknownUser
 		}
+
 		if !b.GetBool("QuoteDisable") {
 			quote := message.ReplyToMessage.Text
 			if quote == "" {
 				quote = message.ReplyToMessage.Caption
 			}
+
 			rmsg.Text = b.handleQuote(rmsg.Text, usernameReply, quote)
 		}
 	}
@@ -133,11 +141,13 @@ func (b *Btelegram) handleUsername(rmsg *config.Message, message *tgbotapi.Messa
 		if b.GetBool("UseFirstName") {
 			rmsg.Username = message.From.FirstName
 		}
+
 		if b.GetBool("UseFullName") {
 			if message.From.FirstName != "" && message.From.LastName != "" {
 				rmsg.Username = message.From.FirstName + " " + message.From.LastName
 			}
 		}
+
 		if rmsg.Username == "" {
 			rmsg.Username = message.From.UserName
 			if rmsg.Username == "" {
@@ -155,6 +165,7 @@ func (b *Btelegram) handleUsername(rmsg *config.Message, message *tgbotapi.Messa
 		if b.GetBool("UseFirstName") {
 			rmsg.Username = message.SenderChat.FirstName
 		}
+
 		if b.GetBool("UseFullName") {
 			if message.SenderChat.FirstName != "" && message.SenderChat.LastName != "" {
 				rmsg.Username = message.SenderChat.FirstName + " " + message.SenderChat.LastName
@@ -218,6 +229,7 @@ func (b *Btelegram) handleRecv(updates <-chan tgbotapi.Update) {
 
 		// set the ID's from the channel or group message
 		rmsg.ID = strconv.Itoa(message.MessageID)
+
 		rmsg.Channel = strconv.FormatInt(message.Chat.ID, 10)
 		if message.IsTopicMessage {
 			rmsg.Channel += "/" + strconv.Itoa(message.MessageThreadID)
@@ -258,6 +270,7 @@ func (b *Btelegram) handleRecv(updates <-chan tgbotapi.Update) {
 
 			b.Log.Debugf("<= Sending message from %s on %s to gateway", rmsg.Username, b.Account)
 			b.Log.Debugf("<= Message is %#v", rmsg)
+
 			b.Remote <- rmsg
 		}
 	}
@@ -341,12 +354,15 @@ func (b *Btelegram) handleDownloadAvatar(userid int64, channel string) {
 			b.Log.Error(err)
 			return
 		}
+
 		data, err := helper.DownloadFile(url)
 		if err != nil {
 			b.Log.Errorf("download %s failed %#v", url, err)
 			return
 		}
+
 		helper.HandleDownloadData(b.Log, &rmsg, name, rmsg.Text, "", data, b.General)
+
 		b.Remote <- rmsg
 	}
 }
@@ -361,6 +377,7 @@ func (b *Btelegram) maybeConvertTgs(name *string, data *[]byte) {
 		// file, and has nothing to do with WebP.
 		return
 	}
+
 	err := helper.ConvertTgsToX(data, format, b.Log)
 	if err != nil {
 		b.Log.Errorf("conversion failed: %v", err)
@@ -372,6 +389,7 @@ func (b *Btelegram) maybeConvertTgs(name *string, data *[]byte) {
 func (b *Btelegram) maybeConvertWebp(name *string, data *[]byte) {
 	if b.GetBool("MediaConvertWebPToPNG") {
 		b.Log.Debugf("WebP to PNG conversion enabled, converting %v", name)
+
 		err := helper.ConvertWebPToPNG(data)
 		if err != nil {
 			b.Log.Errorf("conversion failed: %v", err)
@@ -384,7 +402,9 @@ func (b *Btelegram) maybeConvertWebp(name *string, data *[]byte) {
 // handleDownloadFile handles file download
 func (b *Btelegram) handleDownload(rmsg *config.Message, message *tgbotapi.Message) error {
 	size := int64(0)
+
 	var url, name, text string
+
 	switch {
 	case message.Sticker != nil:
 		text, name, url = b.getDownloadInfo(message.Sticker.FileID, ".webp", true)
@@ -417,6 +437,7 @@ func (b *Btelegram) handleDownload(rmsg *config.Message, message *tgbotapi.Messa
 	if b.GetBool("UseInsecureURL") {
 		b.Log.Debugf("Setting message text to :%s", text)
 		rmsg.Text += text
+
 		return nil
 	}
 	// if we have a file attached, download it (in memory) and put a pointer to it in msg.Extra
@@ -424,6 +445,7 @@ func (b *Btelegram) handleDownload(rmsg *config.Message, message *tgbotapi.Messa
 	if err != nil {
 		return err
 	}
+
 	data, err := helper.DownloadFile(url)
 	if err != nil {
 		return err
@@ -441,20 +463,25 @@ func (b *Btelegram) handleDownload(rmsg *config.Message, message *tgbotapi.Messa
 	}
 
 	helper.HandleDownloadData(b.Log, rmsg, name, message.Caption, "", data, b.General)
+
 	return nil
 }
 
 func (b *Btelegram) getDownloadInfo(id string, suffix string, urlpart bool) (string, string, string) {
 	url := b.getFileDirectURL(id)
 	name := ""
+
 	if urlpart {
 		urlPart := strings.Split(url, "/")
 		name = urlPart[len(urlPart)-1]
 	}
+
 	if suffix != "" && !strings.HasSuffix(name, suffix) && !strings.HasSuffix(name, ".webm") {
 		name += suffix
 	}
+
 	text := " " + url
+
 	return text, name, url
 }
 
@@ -481,36 +508,48 @@ func (b *Btelegram) handleEdit(msg *config.Message, chatid int64) (string, error
 	if err != nil {
 		return "", err
 	}
+
 	if strings.ToLower(b.GetString("MessageFormat")) == HTMLNick {
 		b.Log.Debug("Using mode HTML - nick only")
+
 		msg.Text = html.EscapeString(msg.Text)
 	}
+
 	m := tgbotapi.NewEditMessageText(chatid, msgid, msg.Username+msg.Text)
+
 	switch b.GetString("MessageFormat") {
 	case HTMLFormat:
 		b.Log.Debug("Using mode HTML")
+
 		m.ParseMode = tgbotapi.ModeHTML
 	case "Markdown":
 		b.Log.Debug("Using mode markdown")
+
 		m.ParseMode = tgbotapi.ModeMarkdown
 	case MarkdownV2:
 		b.Log.Debug("Using mode MarkdownV2")
+
 		m.ParseMode = MarkdownV2
 	}
+
 	if strings.ToLower(b.GetString("MessageFormat")) == HTMLNick {
 		b.Log.Debug("Using mode HTML - nick only")
+
 		m.ParseMode = tgbotapi.ModeHTML
 	}
+
 	_, err = b.c.Send(m)
 	if err != nil {
 		return "", err
 	}
+
 	return "", nil
 }
 
 // handleUploadFile handles native upload of files
 func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid int, parentID int) (string, error) {
 	var media []interface{}
+
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
 		file := tgbotapi.FileBytes{
@@ -528,33 +567,39 @@ func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid
 			if fi.Comment != "" {
 				pc.Caption, pc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
 			}
+
 			media = append(media, pc)
 		case ".mp4", ".m4v":
 			vc := tgbotapi.NewInputMediaVideo(file)
 			if fi.Comment != "" {
 				vc.Caption, vc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
 			}
+
 			media = append(media, vc)
 		case ".mp3", ".oga":
 			ac := tgbotapi.NewInputMediaAudio(file)
 			if fi.Comment != "" {
 				ac.Caption, ac.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
 			}
+
 			media = append(media, ac)
 		case ".ogg":
 			voc := tgbotapi.NewVoice(chatid, file)
 			voc.Caption, voc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
 			voc.ReplyToMessageID = parentID
+
 			res, err := b.c.Send(voc)
 			if err != nil {
 				return "", err
 			}
+
 			return strconv.Itoa(res.MessageID), nil
 		default:
 			dc := tgbotapi.NewInputMediaDocument(file)
 			if fi.Comment != "" {
 				dc.Caption, dc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
 			}
+
 			media = append(media, dc)
 		}
 	}
@@ -567,17 +612,21 @@ func (b *Btelegram) handleQuote(message, quoteNick, quoteMessage string) string 
 	if format == "" {
 		format = "{MESSAGE} (re @{QUOTENICK}: {QUOTEMESSAGE})"
 	}
+
 	quoteMessagelength := len([]rune(quoteMessage))
 	if b.GetInt("QuoteLengthLimit") != 0 && quoteMessagelength >= b.GetInt("QuoteLengthLimit") {
 		runes := []rune(quoteMessage)
+
 		quoteMessage = string(runes[0:b.GetInt("QuoteLengthLimit")])
 		if quoteMessagelength > b.GetInt("QuoteLengthLimit") {
 			quoteMessage += "..."
 		}
 	}
-	format = strings.Replace(format, "{MESSAGE}", message, -1)
-	format = strings.Replace(format, "{QUOTENICK}", quoteNick, -1)
-	format = strings.Replace(format, "{QUOTEMESSAGE}", quoteMessage, -1)
+
+	format = strings.ReplaceAll(format, "{MESSAGE}", message)
+	format = strings.ReplaceAll(format, "{QUOTENICK}", quoteNick)
+	format = strings.ReplaceAll(format, "{QUOTEMESSAGE}", quoteMessage)
+
 	return format
 }
 
@@ -591,21 +640,23 @@ func (b *Btelegram) handleEntities(rmsg *config.Message, message *tgbotapi.Messa
 	prevLinkOffset := -1
 
 	for _, e := range message.Entities {
-
 		asRunes := utf16.Encode([]rune(rmsg.Text))
 
 		if e.Type == "text_link" {
 			offset := e.Offset + indexMovedBy
+
 			url, err := e.ParseURL()
 			if err != nil {
 				b.Log.Errorf("entity text_link url parse failed: %s", err)
 				continue
 			}
+
 			utfEncodedString := utf16.Encode([]rune(rmsg.Text))
 			if offset+e.Length > len(utfEncodedString) {
 				b.Log.Errorf("entity length is too long %d > %d", offset+e.Length, len(utfEncodedString))
 				continue
 			}
+
 			rmsg.Text = string(utf16.Decode(asRunes[:offset+e.Length])) + " (" + url.String() + ")" + string(utf16.Decode(asRunes[offset+e.Length:]))
 			indexMovedBy += len(url.String()) + 3
 			prevLinkOffset = e.Offset
@@ -632,11 +683,13 @@ func (b *Btelegram) handleEntities(rmsg *config.Message, message *tgbotapi.Messa
 			rmsg.Text = string(utf16.Decode(asRunes[:offset])) + "*" + string(utf16.Decode(asRunes[offset:offset+e.Length])) + "*" + string(utf16.Decode(asRunes[offset+e.Length:]))
 			indexMovedBy += 2
 		}
+
 		if e.Type == "italic" {
 			offset := e.Offset + indexMovedBy
 			rmsg.Text = string(utf16.Decode(asRunes[:offset])) + "_" + string(utf16.Decode(asRunes[offset:offset+e.Length])) + "_" + string(utf16.Decode(asRunes[offset+e.Length:]))
 			indexMovedBy += 2
 		}
+
 		if e.Type == "strike" {
 			offset := e.Offset + indexMovedBy
 			rmsg.Text = string(utf16.Decode(asRunes[:offset])) + "~" + string(utf16.Decode(asRunes[offset:offset+e.Length])) + "~" + string(utf16.Decode(asRunes[offset+e.Length:]))

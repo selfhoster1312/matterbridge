@@ -27,6 +27,7 @@ func (b *Bmattermost) handleDownloadAvatar(userid string, channel string) {
 			data []byte
 			err  error
 		)
+
 		data, _, err = b.mc.Client.GetProfileImage(context.TODO(), userid, "")
 		if err != nil {
 			b.Log.Errorf("ProfileImage download failed for %#v %s", userid, err)
@@ -38,7 +39,9 @@ func (b *Bmattermost) handleDownloadAvatar(userid string, channel string) {
 			b.Log.Error(err)
 			return
 		}
+
 		helper.HandleDownloadData(b.Log, &rmsg, userid+".png", rmsg.Text, "", &data, b.General)
+
 		b.Remote <- rmsg
 	}
 }
@@ -46,26 +49,33 @@ func (b *Bmattermost) handleDownloadAvatar(userid string, channel string) {
 //nolint:wrapcheck
 func (b *Bmattermost) handleDownloadFile(rmsg *config.Message, id string) error {
 	url, _, _ := b.mc.Client.GetFileLink(context.TODO(), id)
+
 	finfo, _, err := b.mc.Client.GetFileInfo(context.TODO(), id)
 	if err != nil {
 		return err
 	}
+
 	err = helper.HandleDownloadSize(b.Log, rmsg, finfo.Name, finfo.Size, b.General)
 	if err != nil {
 		return err
 	}
+
 	data, _, err := b.mc.Client.DownloadFile(context.TODO(), id, true)
 	if err != nil {
 		return err
 	}
+
 	helper.HandleDownloadData(b.Log, rmsg, finfo.Name, rmsg.Text, url, &data, b.General)
+
 	return nil
 }
 
 func (b *Bmattermost) handleMatter() {
 	messages := make(chan *config.Message)
+
 	if b.GetString("WebhookBindAddress") != "" {
 		b.Log.Debugf("Choosing webhooks based receiving")
+
 		go b.handleMatterHook(messages)
 	} else {
 		if b.GetString("Token") != "" {
@@ -77,18 +87,24 @@ func (b *Bmattermost) handleMatter() {
 		if b.GetString("WebhookBindAddress") == "" && b.GetString("WebhookURL") != "" && b.GetString("Token") == "" && b.GetString("Login") == "" {
 			b.Log.Debugf("No WebhookBindAddress specified, only WebhookURL. You will not receive messages from mattermost, only sending is possible.")
 		}
+
 		go b.handleMatterClient(messages)
 	}
+
 	var ok bool
+
 	for message := range messages {
 		message.Avatar = helper.GetAvatar(b.avatarMap, message.UserID, b.General)
 		message.Account = b.Account
+
 		message.Text, ok = b.replaceAction(message.Text)
 		if ok {
 			message.Event = config.EventUserAction
 		}
+
 		b.Log.Debugf("<= Sending message from %s on %s to gateway", message.Username, b.Account)
 		b.Log.Debugf("<= Message is %#v", message)
+
 		b.Remote <- *message
 	}
 }
@@ -170,21 +186,28 @@ func (b *Bmattermost) handleMatterHook(messages chan *config.Message) {
 }
 
 func (b *Bmattermost) handleUploadFile(msg *config.Message) (string, error) {
-	var err error
-	var res, id string
+	var (
+		err     error
+		res, id string
+	)
+
 	channelID := b.getChannelID(msg.Channel)
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
+
 		id, err = b.mc.UploadFile(*fi.Data, channelID, fi.Name)
 		if err != nil {
 			return "", err
 		}
+
 		msg.Text = fi.Comment
 		if b.GetBool("PrefixMessagesWithNick") {
 			msg.Text = msg.Username + msg.Text
 		}
+
 		res, err = b.mc.PostMessageWithFiles(channelID, msg.Text, msg.ParentID, []string{id})
 	}
+
 	return res, err
 }
 
@@ -194,9 +217,11 @@ func (b *Bmattermost) handleProps(rmsg *config.Message, message *matterclient.Me
 	if props == nil {
 		return
 	}
+
 	if _, ok := props["override_username"].(string); ok {
 		rmsg.Username = props["override_username"].(string)
 	}
+
 	if _, ok := props["attachments"].([]interface{}); ok {
 		rmsg.Extra["attachments"] = props["attachments"].([]interface{})
 		if rmsg.Text != "" {
@@ -209,6 +234,7 @@ func (b *Bmattermost) handleProps(rmsg *config.Message, message *matterclient.Me
 				rmsg.Text += attach["text"].(string)
 				continue
 			}
+
 			if attach["fallback"].(string) != "" {
 				rmsg.Text += attach["fallback"].(string)
 			}

@@ -16,15 +16,20 @@ var ErrEventIgnored = errors.New("this event message should ignored")
 
 func (b *Bslack) handleSlack() {
 	messages := make(chan *config.Message)
+
 	if b.GetString(incomingWebhookConfig) != "" && b.GetString(tokenConfig) == "" {
 		b.Log.Debugf("Choosing webhooks based receiving")
+
 		go b.handleMatterHook(messages)
 	} else {
 		b.Log.Debugf("Choosing token based receiving")
+
 		go b.handleSlackClient(messages)
 	}
+
 	time.Sleep(time.Second)
 	b.Log.Debug("Start listening for Slack messages")
+
 	for message := range messages {
 		// don't do any action on deleted/typing messages
 		if message.Event != config.EventUserTyping && message.Event != config.EventMsgDelete &&
@@ -43,6 +48,7 @@ func (b *Bslack) handleSlack() {
 		}
 
 		b.Log.Debugf("<= Message is %#v", message)
+
 		b.Remote <- *message
 	}
 }
@@ -52,13 +58,15 @@ func (b *Bslack) handleSlackClient(messages chan *config.Message) {
 		if msg.Type != sUserTyping && msg.Type != sHello && msg.Type != sLatencyReport {
 			b.Log.Debugf("== Receiving event %#v", msg.Data)
 		}
+
 		switch ev := msg.Data.(type) {
 		case *slack.UserTypingEvent:
 			if !b.GetBool("ShowUserTyping") {
 				continue
 			}
+
 			rmsg, err := b.handleTypingEvent(ev)
-			if err == ErrEventIgnored {
+			if errors.Is(err, ErrEventIgnored) {
 				continue
 			} else if err != nil {
 				b.Log.Errorf("%#v", err)
@@ -71,11 +79,13 @@ func (b *Bslack) handleSlackClient(messages chan *config.Message) {
 				b.Log.Debugf("Skipped message: %#v", ev)
 				continue
 			}
+
 			rmsg, err := b.handleMessageEvent(ev)
 			if err != nil {
 				b.Log.Errorf("%#v", err)
 				continue
 			}
+
 			messages <- rmsg
 		case *slack.FileDeletedEvent:
 			rmsg, err := b.handleFileDeletedEvent(ev)
@@ -83,6 +93,7 @@ func (b *Bslack) handleSlackClient(messages chan *config.Message) {
 				b.Log.Printf("%#v", err)
 				continue
 			}
+
 			messages <- rmsg
 		case *slack.OutgoingErrorEvent:
 			b.Log.Debugf("%#v", ev.Error())
@@ -115,9 +126,11 @@ func (b *Bslack) handleMatterHook(messages chan *config.Message) {
 	for {
 		message := b.mh.Receive()
 		b.Log.Debugf("receiving from matterhook (slack) %#v", message)
+
 		if message.UserName == "slackbot" {
 			continue
 		}
+
 		messages <- &config.Message{
 			Username: message.UserName,
 			Text:     message.Text,
@@ -142,6 +155,7 @@ func (b *Bslack) skipMessageEvent(ev *slack.MessageEvent) bool {
 
 	// Check for our callback ID
 	hasOurCallbackID := false
+
 	if len(ev.Blocks.BlockSet) == 1 {
 		block, ok := ev.Blocks.BlockSet[0].(*slack.SectionBlock)
 		hasOurCallbackID = ok && block.BlockID == "matterbridge_"+b.uuid
@@ -159,6 +173,7 @@ func (b *Bslack) skipMessageEvent(ev *slack.MessageEvent) bool {
 		if ev.SubType == "message_replied" && ev.Hidden {
 			return true
 		}
+
 		if len(ev.SubMessage.Blocks.BlockSet) == 1 {
 			block, ok := ev.SubMessage.Blocks.BlockSet[0].(*slack.SectionBlock)
 			hasOurCallbackID = ok && block.BlockID == "matterbridge_"+b.uuid
@@ -174,6 +189,7 @@ func (b *Bslack) skipMessageEvent(ev *slack.MessageEvent) bool {
 	if len(ev.Files) > 0 {
 		return b.filesCached(ev.Files)
 	}
+
 	return false
 }
 
@@ -183,25 +199,26 @@ func (b *Bslack) filesCached(files []slack.File) bool {
 			return false
 		}
 	}
+
 	return true
 }
 
 // handleMessageEvent handles the message events. Together with any called sub-methods,
 // this method implements the following event processing pipeline:
 //
-// 1. Check if the message should be ignored.
-//    NOTE: This is not actually part of the method below but is done just before it
-//          is called via the 'skipMessageEvent()' method.
-// 2. Populate the Matterbridge message that will be sent to the router based on the
-//    received event and logic that is common to all events that are not skipped.
-// 3. Detect and handle any message that is "status" related (think join channel, etc.).
-//    This might result in an early exit from the pipeline and passing of the
-//    pre-populated message to the Matterbridge router.
-// 4. Handle the specific case of messages that edit existing messages depending on
-//    configuration.
-// 5. Handle any attachments of the received event.
-// 6. Check that the Matterbridge message that we end up with after at the end of the
-//    pipeline is valid before sending it to the Matterbridge router.
+//  1. Check if the message should be ignored.
+//     NOTE: This is not actually part of the method below but is done just before it
+//     is called via the 'skipMessageEvent()' method.
+//  2. Populate the Matterbridge message that will be sent to the router based on the
+//     received event and logic that is common to all events that are not skipped.
+//  3. Detect and handle any message that is "status" related (think join channel, etc.).
+//     This might result in an early exit from the pipeline and passing of the
+//     pre-populated message to the Matterbridge router.
+//  4. Handle the specific case of messages that edit existing messages depending on
+//     configuration.
+//  5. Handle any attachments of the received event.
+//  6. Check that the Matterbridge message that we end up with after at the end of the
+//     pipeline is valid before sending it to the Matterbridge router.
 func (b *Bslack) handleMessageEvent(ev *slack.MessageEvent) (*config.Message, error) {
 	rmsg, err := b.populateReceivedMessage(ev)
 	if err != nil {
@@ -222,11 +239,14 @@ func (b *Bslack) handleMessageEvent(ev *slack.MessageEvent) (*config.Message, er
 			// This is probably a webhook we couldn't resolve.
 			return nil, fmt.Errorf("message handling resulted in an empty bot message (probably an incoming webhook we couldn't resolve): %#v", ev)
 		}
+
 		if ev.SubMessage != nil {
 			return nil, fmt.Errorf("message handling resulted in an empty message: %#v with submessage %#v", ev, ev.SubMessage)
 		}
+
 		return nil, fmt.Errorf("message handling resulted in an empty message: %#v", ev)
 	}
+
 	return rmsg, nil
 }
 
@@ -261,6 +281,7 @@ func (b *Bslack) handleStatusEvent(ev *slack.MessageEvent, rmsg *config.Message)
 		rmsg.Event = config.EventJoinLeave
 	case sChannelTopic, sChannelPurpose:
 		b.channels.populateChannels(false)
+
 		rmsg.Event = config.EventTopicChange
 	case sMessageChanged:
 		rmsg.Text = ev.SubMessage.Text
@@ -279,6 +300,7 @@ func (b *Bslack) handleStatusEvent(ev *slack.MessageEvent, rmsg *config.Message)
 	case sMeMessage:
 		rmsg.Event = config.EventUserAction
 	}
+
 	return false
 }
 
@@ -286,6 +308,7 @@ func getMessageTitle(attach *slack.Attachment) string {
 	if attach.TitleLink != "" {
 		return fmt.Sprintf("[%s](%s)\n", attach.Title, attach.TitleLink)
 	}
+
 	return attach.Title
 }
 
@@ -302,6 +325,7 @@ func (b *Bslack) handleAttachments(ev *slack.MessageEvent, rmsg *config.Message)
 				if attach.Title != "" {
 					rmsg.Text = getMessageTitle(&ev.Attachments[i])
 				}
+
 				rmsg.Text += attach.Text
 				if attach.Footer != "" {
 					rmsg.Text += "\n\n" + attach.Footer
@@ -321,7 +345,9 @@ func (b *Bslack) handleAttachments(ev *slack.MessageEvent, rmsg *config.Message)
 	for i := range ev.Files {
 		// keep reference in cache on which channel we added this file
 		b.cache.Add(cfileDownloadChannel+ev.Files[i].ID, ev.Channel)
-		if err := b.handleDownloadFile(rmsg, &ev.Files[i], false); err != nil {
+		err := b.handleDownloadFile(rmsg, &ev.Files[i], false)
+
+		if err != nil {
 			b.Log.Errorf("Could not download incoming file: %#v", err)
 		}
 	}
@@ -331,10 +357,12 @@ func (b *Bslack) handleTypingEvent(ev *slack.UserTypingEvent) (*config.Message, 
 	if ev.User == b.si.User.ID {
 		return nil, ErrEventIgnored
 	}
+
 	channelInfo, err := b.channels.getChannelByID(ev.Channel)
 	if err != nil {
 		return nil, err
 	}
+
 	return &config.Message{
 		Channel: channelInfo.Name,
 		Account: b.Account,
@@ -362,6 +390,7 @@ func (b *Bslack) handleDownloadFile(rmsg *config.Message, file *slack.File, retr
 	if len(*data) != file.Size && !retry {
 		b.Log.Debugf("Data size (%d) is not equal to size declared (%d)\n", len(*data), file.Size)
 		time.Sleep(1 * time.Second)
+
 		return b.handleDownloadFile(rmsg, file, true)
 	}
 
@@ -371,6 +400,7 @@ func (b *Bslack) handleDownloadFile(rmsg *config.Message, file *slack.File, retr
 	comment := rmsg.Text
 	rmsg.Text = ""
 	helper.HandleDownloadData2(b.Log, rmsg, file.Name, file.ID, comment, file.URLPrivateDownload, data, b.General)
+
 	return nil
 }
 
@@ -392,6 +422,7 @@ func (b *Bslack) handleGetChannelMembers(rmsg *config.Message) bool {
 	}
 
 	b.Log.Debugf("sending msg to remote %#v", msg)
+
 	b.Remote <- msg
 
 	return true
@@ -411,5 +442,6 @@ func (b *Bslack) fileCached(file *slack.File) bool {
 	} else if ts, ok = b.cache.Get("filename" + file.Name); ok && time.Since(ts.(time.Time)) < 10*time.Second {
 		return true
 	}
+
 	return false
 }

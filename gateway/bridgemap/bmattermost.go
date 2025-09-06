@@ -1,3 +1,4 @@
+//go:build !nomattermost
 // +build !nomattermost
 
 package bridgemap

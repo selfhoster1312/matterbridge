@@ -15,6 +15,7 @@ func getAvatar(av map[string]string, userid string, general *config.Protocol) st
 		id := pathRegex.ReplaceAllString(userid, "_")
 		return general.MediaServerDownload + "/" + hash + "/" + id + ".png"
 	}
+
 	return ""
 }
 
@@ -26,5 +27,6 @@ func (b *Bxmpp) cacheAvatar(msg *config.Message) string {
 		b.Log.Debugf("Added %s to %s in avatarMap", fi.SHA, msg.UserID)
 		b.avatarMap[msg.UserID] = fi.SHA
 	}
+
 	return ""
 }

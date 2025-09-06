@@ -47,6 +47,7 @@ func New(rootLogger *logrus.Logger, cfg *config.Gateway, r *Router) *Gateway {
 	logger := rootLogger.WithFields(logrus.Fields{"prefix": "gateway"})
 
 	cache, _ := lru.New(5000)
+
 	gw := &Gateway{
 		Channels: make(map[string]*config.ChannelInfo),
 		Message:  r.Message,
@@ -56,9 +57,11 @@ func New(rootLogger *logrus.Logger, cfg *config.Gateway, r *Router) *Gateway {
 		Messages: cache,
 		logger:   logger,
 	}
-	if err := gw.AddConfig(cfg); err != nil {
+	err := gw.AddConfig(cfg)
+	if err != nil {
 		logger.Errorf("Failed to add configuration to gateway: %#v", err)
 	}
+
 	return gw
 }
 
@@ -72,6 +75,7 @@ func (gw *Gateway) FindCanonicalMsgID(protocol string, mID string) string {
 	// If not keyed, iterate through cache for downstream, and infer upstream.
 	for _, mid := range gw.Messages.Keys() {
 		v, _ := gw.Messages.Peek(mid)
+
 		ids := v.([]*BrMsgID)
 		for _, downstreamMsgObj := range ids {
 			if ID == downstreamMsgObj.ID {
@@ -79,6 +83,7 @@ func (gw *Gateway) FindCanonicalMsgID(protocol string, mID string) string {
 			}
 		}
 	}
+
 	return ""
 }
 
@@ -99,21 +104,26 @@ func (gw *Gateway) AddBridge(cfg *config.Bridge) error {
 		if _, ok := gw.Router.BridgeMap[br.Protocol]; !ok {
 			gw.logger.Fatalf("Incorrect protocol %s specified in gateway configuration %s, exiting.", br.Protocol, cfg.Account)
 		}
+
 		br.Bridger = gw.Router.BridgeMap[br.Protocol](brconfig)
 	}
+
 	gw.mapChannelsToBridge(br)
 	gw.Bridges[cfg.Account] = br
+
 	return nil
 }
 
 func (gw *Gateway) checkConfig(cfg *config.Bridge) {
 	match := false
+
 	for _, key := range gw.Router.Config.Viper().AllKeys() {
 		if strings.HasPrefix(key, strings.ToLower(cfg.Account)) {
 			match = true
 			break
 		}
 	}
+
 	if !match {
 		gw.logger.Fatalf("Account %s defined in gateway %s but no configuration found, exiting.", cfg.Account, gw.Name)
 	}
@@ -122,17 +132,22 @@ func (gw *Gateway) checkConfig(cfg *config.Bridge) {
 // AddConfig associates a new configuration with the gateway object.
 func (gw *Gateway) AddConfig(cfg *config.Gateway) error {
 	gw.Name = cfg.Name
+
 	gw.MyConfig = cfg
-	if err := gw.mapChannels(); err != nil {
+	err := gw.mapChannels()
+	if err != nil {
 		gw.logger.Errorf("mapChannels() failed: %s", err)
 	}
+
 	for _, br := range append(gw.MyConfig.In, append(gw.MyConfig.InOut, gw.MyConfig.Out...)...) {
-		br := br // scopelint
+		// scopelint
+
 		err := gw.AddBridge(&br)
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -148,15 +163,20 @@ func (gw *Gateway) reconnectBridge(br *bridge.Bridge) {
 	if err := br.Disconnect(); err != nil {
 		gw.logger.Errorf("Disconnect() %s failed: %s", br.Account, err)
 	}
+
 	time.Sleep(time.Second * 5)
+
 RECONNECT:
 	gw.logger.Infof("Reconnecting %s", br.Account)
+
 	err := br.Connect()
 	if err != nil {
 		gw.logger.Errorf("Reconnection failed: %s. Trying again in 60 seconds", err)
 		time.Sleep(time.Second * 60)
+
 		goto RECONNECT
 	}
+
 	br.Joined = make(map[string]bool)
 	if err := br.JoinChannels(); err != nil {
 		gw.logger.Errorf("JoinChannels() %s failed: %s", br.Account, err)
@@ -172,14 +192,17 @@ func (gw *Gateway) mapChannelConfig(cfg []config.Bridge, direction string) {
 		if strings.HasPrefix(br.Account, "irc.") {
 			br.Channel = strings.ToLower(br.Channel)
 		}
+
 		if strings.HasPrefix(br.Account, "mattermost.") && strings.HasPrefix(br.Channel, "#") {
 			gw.logger.Errorf("Mattermost channels do not start with a #: remove the # in %s", br.Channel)
 			os.Exit(1)
 		}
+
 		if strings.HasPrefix(br.Account, "zulip.") && !strings.Contains(br.Channel, "/topic:") {
 			gw.logger.Errorf("Breaking change, since matterbridge 1.14.0 zulip channels need to specify the topic with channel/topic:mytopic in %s of %s", br.Channel, br.Account)
 			os.Exit(1)
 		}
+
 		ID := br.Channel + br.Account
 		if _, ok := gw.Channels[ID]; !ok {
 			channel := &config.ChannelInfo{
@@ -198,6 +221,7 @@ func (gw *Gateway) mapChannelConfig(cfg []config.Bridge, direction string) {
 				gw.Channels[ID].Direction = "inout"
 			}
 		}
+
 		gw.Channels[ID].SameChannel[gw.Name] = br.SameChannel
 	}
 }
@@ -206,6 +230,7 @@ func (gw *Gateway) mapChannels() error {
 	gw.mapChannelConfig(gw.MyConfig.In, "in")
 	gw.mapChannelConfig(gw.MyConfig.Out, "out")
 	gw.mapChannelConfig(gw.MyConfig.InOut, "inout")
+
 	return nil
 }
 
@@ -225,6 +250,7 @@ func (gw *Gateway) getDestChannel(msg *config.Message, dest bridge.Bridge) []con
 				channels = append(channels, *channel)
 			}
 		}
+
 		return channels
 	}
 
@@ -236,9 +262,11 @@ func (gw *Gateway) getDestChannel(msg *config.Message, dest bridge.Bridge) []con
 			if !strings.Contains(channel.Direction, "in") {
 				return channels
 			}
+
 			continue
 		}
 	}
+
 	for _, channel := range gw.Channels {
 		if _, ok := gw.Channels[getChannelID(msg)]; !ok {
 			continue
@@ -249,12 +277,15 @@ func (gw *Gateway) getDestChannel(msg *config.Message, dest bridge.Bridge) []con
 			if msg.Channel == channel.Name && msg.Account != dest.Account {
 				channels = append(channels, *channel)
 			}
+
 			continue
 		}
+
 		if strings.Contains(channel.Direction, "out") && channel.Account == dest.Account && gw.validGatewayDest(msg) {
 			channels = append(channels, *channel)
 		}
 	}
+
 	return channels
 }
 
@@ -269,6 +300,7 @@ func (gw *Gateway) getDestMsgID(msgID string, dest *bridge.Bridge, channel *conf
 			}
 		}
 	}
+
 	return ""
 }
 
@@ -277,6 +309,7 @@ func (gw *Gateway) ignoreTextEmpty(msg *config.Message) bool {
 	if msg.Text != "" {
 		return false
 	}
+
 	if msg.Event == config.EventUserTyping {
 		return false
 	}
@@ -287,7 +320,9 @@ func (gw *Gateway) ignoreTextEmpty(msg *config.Message) bool {
 			len(msg.Extra[config.EventFileFailureSize]) > 0) {
 		return false
 	}
+
 	gw.logger.Debugf("ignoring empty message %#v from %s", msg, msg.Account)
+
 	return true
 }
 
@@ -298,6 +333,7 @@ func (gw *Gateway) ignoreMessage(msg *config.Message) bool {
 	}
 
 	igNicks := strings.Fields(gw.Bridges[msg.Account].GetString("IgnoreNicks"))
+
 	igMessages := strings.Fields(gw.Bridges[msg.Account].GetString("IgnoreMessages"))
 	if gw.ignoreTextEmpty(msg) || gw.ignoreText(msg.Username, igNicks) || gw.ignoreText(msg.Text, igMessages) || gw.ignoreFilesComment(msg.Extra, igMessages) {
 		return true
@@ -311,15 +347,18 @@ func (gw *Gateway) ignoreFilesComment(extra map[string][]interface{}, igMessages
 	if extra == nil {
 		return false
 	}
+
 	for _, f := range extra["file"] {
 		fi, ok := f.(config.FileInfo)
 		if !ok {
 			continue
 		}
+
 		if gw.ignoreText(fi.Comment, igMessages) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -328,6 +367,7 @@ func (gw *Gateway) modifyUsername(msg *config.Message, dest *bridge.Bridge) stri
 		re := regexp.MustCompile("[^a-zA-Z0-9]+")
 		msg.Username = re.ReplaceAllString(msg.Username, "")
 	}
+
 	nick := dest.GetString("RemoteNickFormat")
 
 	// loop to replace nicks
@@ -341,6 +381,7 @@ func (gw *Gateway) modifyUsername(msg *config.Message, dest *bridge.Bridge) stri
 			gw.logger.Errorf("regexp in %s failed: %s", msg.Account, err)
 			break
 		}
+
 		msg.Username = re.ReplaceAllString(msg.Username, replace)
 	}
 
@@ -352,8 +393,10 @@ func (gw *Gateway) modifyUsername(msg *config.Message, dest *bridge.Bridge) stri
 				i = index
 				break
 			}
+
 			i++
 		}
+
 		nick = strings.ReplaceAll(nick, "{NOPINGNICK}", msg.Username[:i]+"\u200b"+msg.Username[i:])
 	}
 
@@ -364,20 +407,25 @@ func (gw *Gateway) modifyUsername(msg *config.Message, dest *bridge.Bridge) stri
 	nick = strings.ReplaceAll(nick, "{NICK}", msg.Username)
 	nick = strings.ReplaceAll(nick, "{USERID}", msg.UserID)
 	nick = strings.ReplaceAll(nick, "{CHANNEL}", msg.Channel)
+
 	tengoNick, err := gw.modifyUsernameTengo(msg, br)
 	if err != nil {
 		gw.logger.Errorf("modifyUsernameTengo error: %s", err)
 	}
+
 	nick = strings.ReplaceAll(nick, "{TENGO}", tengoNick)
+
 	return nick
 }
 
 func (gw *Gateway) modifyAvatar(msg *config.Message, dest *bridge.Bridge) string {
 	iconurl := dest.GetString("IconURL")
-	iconurl = strings.Replace(iconurl, "{NICK}", msg.Username, -1)
+
+	iconurl = strings.ReplaceAll(iconurl, "{NICK}", msg.Username)
 	if msg.Avatar == "" {
 		msg.Avatar = iconurl
 	}
+
 	return msg.Avatar
 }
 
@@ -386,7 +434,8 @@ func (gw *Gateway) modifyMessage(msg *config.Message) {
 		gw.logger.Warnf("General TengoModifyMessage=%s is deprecated and will be removed in v1.20.0, please move to Tengo InMessage=%s", gw.BridgeValues().General.TengoModifyMessage, gw.BridgeValues().General.TengoModifyMessage)
 	}
 
-	if err := modifyInMessageTengo(gw.BridgeValues().General.TengoModifyMessage, msg); err != nil {
+	err := modifyInMessageTengo(gw.BridgeValues().General.TengoModifyMessage, msg)
+	if err != nil {
 		gw.logger.Errorf("TengoModifyMessage failed: %s", err)
 	}
 
@@ -398,7 +447,8 @@ func (gw *Gateway) modifyMessage(msg *config.Message) {
 		}
 	}
 
-	if err := modifyInMessageTengo(inMessage, msg); err != nil {
+	err := modifyInMessageTengo(inMessage, msg)
+	if err != nil {
 		gw.logger.Errorf("Tengo.Message failed: %s", err)
 	}
 
@@ -417,6 +467,7 @@ func (gw *Gateway) modifyMessage(msg *config.Message) {
 			gw.logger.Errorf("regexp in %s failed: %s", msg.Account, err)
 			break
 		}
+
 		msg.Text = re.ReplaceAllString(msg.Text, replace)
 	}
 
@@ -519,6 +570,7 @@ func (gw *Gateway) SendMessage(
 		return mID, nil
 		// brMsgIDs = append(brMsgIDs, &BrMsgID{dest, dest.Protocol + " " + mID, channel.ID})
 	}
+
 	return "", nil
 }
 
@@ -546,11 +598,13 @@ func (gw *Gateway) ignoreText(text string, input []string) bool {
 			gw.logger.Errorf("incorrect regexp %s", entry)
 			continue
 		}
+
 		if re.MatchString(text) {
 			gw.logger.Debugf("matching %s. ignoring %s", entry, text)
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -563,10 +617,12 @@ func modifyInMessageTengo(filename string, msg *config.Message) error {
 	if filename == "" {
 		return nil
 	}
+
 	res, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
+
 	s := tengo.NewScript(res)
 	s.SetImports(stdlib.GetModuleMap(stdlib.AllModuleNames()...))
 	_ = s.Add("msgText", msg.Text)
@@ -574,15 +630,19 @@ func modifyInMessageTengo(filename string, msg *config.Message) error {
 	_ = s.Add("msgUserID", msg.UserID)
 	_ = s.Add("msgAccount", msg.Account)
 	_ = s.Add("msgChannel", msg.Channel)
+
 	c, err := s.Compile()
 	if err != nil {
 		return err
 	}
+
 	if err := c.Run(); err != nil {
 		return err
 	}
+
 	msg.Text = c.Get("msgText").String()
 	msg.Username = c.Get("msgUsername").String()
+
 	return nil
 }
 
@@ -591,10 +651,12 @@ func (gw *Gateway) modifyUsernameTengo(msg *config.Message, br *bridge.Bridge) (
 	if filename == "" {
 		return "", nil
 	}
+
 	res, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return "", err
 	}
+
 	s := tengo.NewScript(res)
 	s.SetImports(stdlib.GetModuleMap(stdlib.AllModuleNames()...))
 	_ = s.Add("result", "")
@@ -610,18 +672,22 @@ func (gw *Gateway) modifyUsernameTengo(msg *config.Message, br *bridge.Bridge) (
 	_ = s.Add("protocol", br.Protocol)
 	_ = s.Add("bridge", br.Name)
 	_ = s.Add("gateway", gw.Name)
+
 	c, err := s.Compile()
 	if err != nil {
 		return "", err
 	}
+
 	if err := c.Run(); err != nil {
 		return "", err
 	}
+
 	return c.Get("result").String(), nil
 }
 
 func (gw *Gateway) modifyOutMessageTengo(origmsg *config.Message, msg *config.Message, br *bridge.Bridge) (bool, error) {
 	filename := gw.BridgeValues().Tengo.OutMessage
+
 	var (
 		res  []byte
 		err  error
@@ -657,6 +723,7 @@ func (gw *Gateway) modifyOutMessageTengo(origmsg *config.Message, msg *config.Me
 	_ = s.Add("msgUsername", msg.Username)
 	_ = s.Add("msgUserID", msg.UserID)
 	_ = s.Add("msgDrop", drop)
+
 	c, err := s.Compile()
 	if err != nil {
 		return drop, err

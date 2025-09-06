@@ -22,6 +22,7 @@ func (r *Router) handleEventFailure(msg *config.Message) {
 	if msg.Event != config.EventFailure {
 		return
 	}
+
 	for _, gw := range r.Gateways {
 		for _, br := range gw.Bridges {
 			if msg.Account == br.Account {
@@ -37,12 +38,14 @@ func (r *Router) handleEventGetChannelMembers(msg *config.Message) {
 	if msg.Event != config.EventGetChannelMembers {
 		return
 	}
+
 	for _, gw := range r.Gateways {
 		for _, br := range gw.Bridges {
 			if msg.Account == br.Account {
 				cMembers := msg.Extra[config.EventGetChannelMembers][0].(config.ChannelMembers)
 				r.logger.Debugf("Syncing channelmembers from %s", msg.Account)
 				br.SetChannelMembers(&cMembers)
+
 				return
 			}
 		}
@@ -54,11 +57,13 @@ func (r *Router) handleEventRejoinChannels(msg *config.Message) {
 	if msg.Event != config.EventRejoinChannels {
 		return
 	}
+
 	for _, gw := range r.Gateways {
 		for _, br := range gw.Bridges {
 			if msg.Account == br.Account {
 				br.Joined = make(map[string]bool)
-				if err := br.JoinChannels(); err != nil {
+				err := br.JoinChannels()
+				if err != nil {
 					r.logger.Errorf("channel join failed for %s: %s", msg.Account, err)
 				}
 			}
@@ -94,13 +99,15 @@ func (gw *Gateway) handleFiles(msg *config.Message) {
 
 		if gw.BridgeValues().General.MediaServerUpload != "" {
 			// Use MediaServerUpload. Upload using a PUT HTTP request and basicauth.
-			if err := gw.handleFilesUpload(&fi); err != nil {
+			err := gw.handleFilesUpload(&fi)
+			if err != nil {
 				gw.logger.Error(err)
 				continue
 			}
 		} else {
 			// Use MediaServerPath. Place the file on the current filesystem.
-			if err := gw.handleFilesLocal(&fi); err != nil {
+			err := gw.handleFilesLocal(&fi)
+			if err != nil {
 				gw.logger.Error(err)
 				continue
 			}
@@ -129,7 +136,7 @@ func (gw *Gateway) handleFilesUpload(fi *config.FileInfo) error {
 	sha1sum := fmt.Sprintf("%x", sha1.Sum(*fi.Data))[:8] //nolint:gosec
 	url := gw.BridgeValues().General.MediaServerUpload + "/" + sha1sum + "/" + fi.Name
 
-	req, err := http.NewRequest("PUT", url, bytes.NewReader(*fi.Data))
+	req, err := http.NewRequest(http.MethodPut, url, bytes.NewReader(*fi.Data))
 	if err != nil {
 		return fmt.Errorf("mediaserver upload failed, could not create request: %#v", err)
 	}
@@ -137,10 +144,12 @@ func (gw *Gateway) handleFilesUpload(fi *config.FileInfo) error {
 	gw.logger.Debugf("mediaserver upload url: %s", url)
 
 	req.Header.Set("Content-Type", "binary/octet-stream")
+
 	_, err = client.Do(req)
 	if err != nil {
 		return fmt.Errorf("mediaserver upload failed, could not Do request: %#v", err)
 	}
+
 	return nil
 }
 
@@ -149,6 +158,7 @@ func (gw *Gateway) handleFilesUpload(fi *config.FileInfo) error {
 func (gw *Gateway) handleFilesLocal(fi *config.FileInfo) error {
 	sha1sum := fmt.Sprintf("%x", sha1.Sum(*fi.Data))[:8] //nolint:gosec
 	dir := gw.BridgeValues().General.MediaDownloadPath + "/" + sha1sum
+
 	err := os.Mkdir(dir, os.ModePerm)
 	if err != nil && !os.IsExist(err) {
 		return fmt.Errorf("mediaserver path failed, could not mkdir: %s %#v", err, err)
@@ -161,6 +171,7 @@ func (gw *Gateway) handleFilesLocal(fi *config.FileInfo) error {
 	if err != nil {
 		return fmt.Errorf("mediaserver path failed, could not writefile: %s %#v", err, err)
 	}
+
 	return nil
 }
 
@@ -183,6 +194,7 @@ func (gw *Gateway) ignoreEvent(event string, dest *bridge.Bridge) bool {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -223,25 +235,31 @@ func (gw *Gateway) handleMessage(rmsg *config.Message, dest *bridge.Bridge) []*B
 	channels := gw.getDestChannel(rmsg, *dest)
 	for idx := range channels {
 		channel := &channels[idx]
+
 		msgID, err := gw.SendMessage(rmsg, dest, channel, canonicalParentMsgID)
 		if err != nil {
 			gw.logger.Errorf("SendMessage failed: %s", err)
 			continue
 		}
+
 		if msgID == "" {
 			continue
 		}
+
 		brMsgIDs = append(brMsgIDs, &BrMsgID{dest, dest.Protocol + " " + msgID, channel.ID})
 	}
+
 	return brMsgIDs
 }
 
 func (gw *Gateway) handleExtractNicks(msg *config.Message) {
 	var err error
+
 	br := gw.Bridges[msg.Account]
 	for _, outer := range br.GetStringSlice2D("ExtractNicks") {
 		search := outer[0]
 		replace := outer[1]
+
 		msg.Username, msg.Text, err = extractNick(search, replace, msg.Username, msg.Text)
 		if err != nil {
 			gw.logger.Errorf("regexp in %s failed: %s", msg.Account, err)
@@ -259,11 +277,13 @@ func extractNick(search, extract, username, text string) (string, string, error)
 	if err != nil {
 		return username, text, err
 	}
+
 	if re.MatchString(username) {
 		re, err = regexp.Compile(extract)
 		if err != nil {
 			return username, text, err
 		}
+
 		res := re.FindAllStringSubmatch(text, 1)
 		// only replace if we have exactly 1 match
 		if len(res) > 0 && len(res[0]) == 2 {
@@ -271,5 +291,6 @@ func extractNick(search, extract, username, text string) (string, string, error)
 			text = strings.Replace(text, res[0][0], "", 1)
 		}
 	}
+
 	return username, text, nil
 }

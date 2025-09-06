@@ -28,5 +28,6 @@ func getDiscordUserID(session *discordgo.Session) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	return user.ID, nil
 }

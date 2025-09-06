@@ -19,7 +19,7 @@ func TestEnumerateUsernames(t *testing.T) {
 			match:             "veni",
 			expectedUsernames: []string{"veni"},
 		},
-		"single word with preceeding space": {
+		"single word with preceding space": {
 			match:             " vidi",
 			expectedUsernames: []string{" vidi"},
 		},

@@ -1,3 +1,4 @@
+//go:build !nomsteams
 // +build !nomsteams
 
 package bridgemap

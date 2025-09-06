@@ -58,39 +58,52 @@ func (b *Bmattermost) Connect() error {
 	}
 
 	if b.GetString("WebhookBindAddress") != "" {
-		if err := b.doConnectWebhookBind(); err != nil {
+		err := b.doConnectWebhookBind()
+		if err != nil {
 			return err
 		}
+
 		go b.handleMatter()
+
 		return nil
 	}
+
 	switch {
 	case b.GetString("WebhookURL") != "":
-		if err := b.doConnectWebhookURL(); err != nil {
+		err := b.doConnectWebhookURL()
+		if err != nil {
 			return err
 		}
+
 		go b.handleMatter()
+
 		return nil
 	case b.GetString("Token") != "":
 		b.Log.Info("Connecting using token (sending and receiving)")
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
 		}
+
 		go b.handleMatter()
 	case b.GetString("Login") != "":
 		b.Log.Info("Connecting using login/password (sending and receiving)")
 		b.Log.Infof("Using mattermost v6 methods: %t", b.v6)
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
 		}
+
 		go b.handleMatter()
 	}
+
 	if b.GetString("WebhookBindAddress") == "" && b.GetString("WebhookURL") == "" &&
 		b.GetString("Login") == "" && b.GetString("Token") == "" {
 		return errors.New("no connection method found. See that you have WebhookBindAddress, WebhookURL or Token/Login/Password/Server/Team configured")
 	}
+
 	return nil
 }
 
@@ -124,6 +137,7 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 	if b.Account == mattermostPlugin {
 		return "", nil
 	}
+
 	b.Log.Debugf("=> Receiving %#v", msg)
 
 	// Make a action /me of the message
@@ -153,7 +167,7 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 	// Handle prefix hint for unthreaded messages.
 	if msg.ParentNotFound() {
 		msg.ParentID = ""
-		msg.Text = fmt.Sprintf("[thread]: %s", msg.Text)
+		msg.Text = "[thread]: " + msg.Text
 	}
 
 	// we only can reply to the root of the thread, not to a specific ID (like discord for example does)
@@ -162,6 +176,7 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 		if err != nil {
 			b.Log.Errorf("getting post %s failed: %s", msg.ParentID, err)
 		}
+
 		if post != nil && post.RootId != "" {
 			msg.ParentID = post.RootId
 		}
@@ -174,6 +189,7 @@ func (b *Bmattermost) Send(msg config.Message) (string, error) {
 				b.Log.Errorf("PostMessage failed: %s", err)
 			}
 		}
+
 		if len(msg.Extra["file"]) > 0 {
 			return b.handleUploadFile(&msg)
 		}

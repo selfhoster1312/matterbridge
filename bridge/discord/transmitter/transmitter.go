@@ -86,6 +86,7 @@ func (t *Transmitter) Edit(channelID string, messageID string, params *discordgo
 	}
 
 	uri := discordgo.EndpointWebhookToken(wh.ID, wh.Token) + "/messages/" + messageID
+
 	_, err := t.session.RequestWithBucketID("PATCH", uri, params, discordgo.EndpointWebhookToken("", ""))
 	if err != nil {
 		return err
@@ -111,11 +112,13 @@ func (t *Transmitter) HasWebhook(id string) bool {
 // AddWebhook allows you to register a channel's webhook with the transmitter.
 func (t *Transmitter) AddWebhook(channelID string, webhook *discordgo.Webhook) bool {
 	t.Log.Debugf("Manually added webhook %#v to channel %#v", webhook.ID, channelID)
+
 	t.mutex.Lock()
 	defer t.mutex.Unlock()
 
 	_, replaced := t.channelWebhooks[channelID]
 	t.channelWebhooks[channelID] = webhook
+
 	return replaced
 }
 
@@ -158,7 +161,9 @@ func (t *Transmitter) RefreshGuildWebhooks(channelIDs []string) error {
 			if len(channelIDs) == 0 {
 				return ErrPermissionDenied
 			}
+
 			t.Log.Debugln("Missing global 'Manage Webhooks' permission, falling back on per-channel permission")
+
 			return t.fetchChannelsHooks(channelIDs, botID)
 		default:
 			return fmt.Errorf("could not get webhooks: %w", err)
@@ -167,6 +172,7 @@ func (t *Transmitter) RefreshGuildWebhooks(channelIDs []string) error {
 
 	t.Log.Debugln("Refreshing guild webhooks using global permission")
 	t.assignHooksByAppID(hooks, botID, false)
+
 	return nil
 }
 
@@ -181,6 +187,7 @@ func (t *Transmitter) createWebhook(channel string) (*discordgo.Webhook, error) 
 	}
 
 	t.channelWebhooks[channel] = wh
+
 	return wh, nil
 }
 
@@ -204,6 +211,7 @@ func (t *Transmitter) getOrCreateWebhook(channelID string) (*discordgo.Webhook, 
 	}
 
 	t.Log.Infof("Creating a webhook for %s\n", channelID)
+
 	wh, err := t.createWebhook(channelID)
 	if err != nil {
 		return nil, fmt.Errorf("could not create webhook: %w", err)
@@ -216,12 +224,14 @@ func (t *Transmitter) getOrCreateWebhook(channelID string) (*discordgo.Webhook, 
 func (t *Transmitter) fetchChannelsHooks(channelIDs []string, botID string) error {
 	// For each channel, search for relevant hooks
 	var failedHooks []string
+
 	for _, channelID := range channelIDs {
 		hooks, err := t.session.ChannelWebhooks(channelID)
 		if err != nil {
 			failedHooks = append(failedHooks, "\n- "+channelID+": "+err.Error())
 			continue
 		}
+
 		t.assignHooksByAppID(hooks, botID, true)
 	}
 

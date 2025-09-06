@@ -76,13 +76,16 @@ func (b *Bridge) joinChannels(channels map[string]config.ChannelInfo, exists map
 		if !exists[ID] {
 			b.Log.Infof("%s: joining %s (ID: %s)", b.Account, channel.Name, ID)
 			time.Sleep(time.Duration(b.GetInt("JoinDelay")) * time.Millisecond)
+
 			err := b.JoinChannel(channel)
 			if err != nil {
 				return err
 			}
+
 			exists[ID] = true
 		}
 	}
+
 	return nil
 }
 
@@ -99,6 +102,7 @@ func (b *Bridge) GetBool(key string) bool {
 	if !ok {
 		val, _ = b.Config.GetBool("general." + key)
 	}
+
 	return val
 }
 
@@ -107,6 +111,7 @@ func (b *Bridge) GetInt(key string) int {
 	if !ok {
 		val, _ = b.Config.GetInt("general." + key)
 	}
+
 	return val
 }
 
@@ -115,6 +120,7 @@ func (b *Bridge) GetString(key string) string {
 	if !ok {
 		val, _ = b.Config.GetString("general." + key)
 	}
+
 	return val
 }
 
@@ -123,6 +129,7 @@ func (b *Bridge) GetStringSlice(key string) []string {
 	if !ok {
 		val, _ = b.Config.GetStringSlice("general." + key)
 	}
+
 	return val
 }
 
@@ -131,5 +138,6 @@ func (b *Bridge) GetStringSlice2D(key string) [][]string {
 	if !ok {
 		val, _ = b.Config.GetStringSlice2D("general." + key)
 	}
+
 	return val
 }

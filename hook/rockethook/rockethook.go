@@ -42,11 +42,14 @@ func New(url string, config Config) *Client {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: config.InsecureSkipVerify}, //nolint:gosec
 	}
 	c.httpclient = &http.Client{Transport: tr}
+
 	_, _, err := net.SplitHostPort(c.BindAddress)
 	if err != nil {
 		log.Fatalf("incorrect bindaddress %s", c.BindAddress)
 	}
+
 	go c.StartServer()
+
 	return c
 }
 
@@ -55,37 +58,48 @@ func (c *Client) StartServer() {
 	mux := http.NewServeMux()
 	mux.Handle("/", c)
 	log.Printf("Listening on http://%v...\n", c.BindAddress)
-	if err := http.ListenAndServe(c.BindAddress, mux); err != nil {
+	err := http.ListenAndServe(c.BindAddress, mux)
+
+	if err != nil {
 		log.Fatal(err)
 	}
 }
 
 // ServeHTTP implementation.
 func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
+	if r.Method != http.MethodPost {
 		log.Println("invalid " + r.Method + " connection from " + r.RemoteAddr)
 		http.NotFound(w, r)
+
 		return
 	}
+
 	msg := Message{}
+
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Println(err)
 		http.NotFound(w, r)
+
 		return
 	}
 	defer r.Body.Close()
+
 	err = json.Unmarshal(body, &msg)
 	if err != nil {
 		log.Println(err)
 		http.NotFound(w, r)
+
 		return
 	}
+
 	if msg.Token == "" {
 		log.Println("no token from " + r.RemoteAddr)
 		http.NotFound(w, r)
+
 		return
 	}
+
 	msg.ChannelName = "#" + msg.ChannelName
 	if c.Token != "" {
 		if msg.Token != c.Token {
@@ -94,10 +108,13 @@ func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			} else {
 				log.Println("invalid token from " + r.RemoteAddr)
 			}
+
 			http.NotFound(w, r)
+
 			return
 		}
 	}
+
 	c.In <- msg
 }
 
@@ -107,5 +124,6 @@ func (c *Client) Receive() Message {
 	for msg = range c.In {
 		return msg
 	}
+
 	return msg
 }

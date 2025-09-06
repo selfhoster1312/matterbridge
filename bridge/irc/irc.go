@@ -49,17 +49,21 @@ func New(cfg *bridge.Config) bridge.Bridger {
 	} else {
 		b.MessageDelay = b.GetInt("MessageDelay")
 	}
+
 	if b.GetInt("MessageQueue") == 0 {
 		b.MessageQueue = 30
 	} else {
 		b.MessageQueue = b.GetInt("MessageQueue")
 	}
+
 	if b.GetInt("MessageLength") == 0 {
 		b.MessageLength = 400
 	} else {
 		b.MessageLength = b.GetInt("MessageLength")
 	}
+
 	b.FirstConnection = true
+
 	return b
 }
 
@@ -69,6 +73,7 @@ func (b *Birc) Command(msg *config.Message) string {
 		b.i.Handlers.Add(girc.RPL_ENDOFNAMES, b.endNames)
 		b.i.Cmd.SendRaw("NAMES " + msg.Channel) //nolint:errcheck
 	}
+
 	return ""
 }
 
@@ -104,36 +109,41 @@ func (b *Birc) Connect() error {
 	if err != nil {
 		return fmt.Errorf("connection failed %s", err)
 	}
+
 	b.Log.Info("Connection succeeded")
+
 	b.FirstConnection = false
 	if b.GetInt("DebugLevel") == 0 {
 		i.Handlers.Clear(girc.ALL_EVENTS)
 	}
+
 	go b.doSend()
+
 	return nil
 }
 
 func (b *Birc) Disconnect() error {
 	b.i.Close()
 	close(b.Local)
+
 	return nil
 }
 
 func (b *Birc) JoinChannel(channel config.ChannelInfo) error {
 	b.channels[channel.Name] = true
 	// need to check if we have nickserv auth done before joining channels
-	for {
-		if b.authDone {
-			break
-		}
+	for !b.authDone {
+
 		time.Sleep(time.Second)
 	}
+
 	if channel.Options.Key != "" {
 		b.Log.Debugf("using key %s for channel %s", channel.Options.Key, channel.Name)
 		b.i.Cmd.JoinKey(channel.Name, channel.Options.Key)
 	} else {
 		b.i.Cmd.Join(channel.Name)
 	}
+
 	return nil
 }
 
@@ -157,7 +167,8 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 	}
 
 	// convert to specified charset
-	if err := b.handleCharset(&msg); err != nil {
+	err := b.handleCharset(&msg)
+	if err != nil {
 		return "", err
 	}
 
@@ -167,6 +178,7 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 	}
 
 	var msgLines []string
+
 	if b.GetBool("StripMarkdown") {
 		msg.Text = stripmd.Strip(msg.Text)
 	}
@@ -176,6 +188,7 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 	} else {
 		msgLines = helper.GetSubLines(msg.Text, 0, b.GetString("MessageClipped"))
 	}
+
 	for i := range msgLines {
 		if len(b.Local) >= b.MessageQueue {
 			b.Log.Debugf("flooding, dropping message (queue at %d)", len(b.Local))
@@ -185,13 +198,16 @@ func (b *Birc) Send(msg config.Message) (string, error) {
 		msg.Text = msgLines[i]
 		b.Local <- msg
 	}
+
 	return "", nil
 }
 
 func (b *Birc) doConnect() {
 	for {
-		if err := b.i.Connect(); err != nil {
+		err := b.i.Connect()
+		if err != nil {
 			b.Log.Errorf("disconnect: error: %s", err)
+
 			if b.FirstConnection {
 				b.connected <- err
 				return
@@ -199,6 +215,7 @@ func (b *Birc) doConnect() {
 		} else {
 			b.Log.Info("disconnect: client requested quit")
 		}
+
 		b.Log.Info("reconnecting in 30 seconds...")
 		time.Sleep(30 * time.Second)
 		b.i.Handlers.Clear(girc.RPL_WELCOME)
@@ -216,20 +233,24 @@ func sanitizeNick(nick string) string {
 		if strings.ContainsRune("!+%@&#$:'\"?*,. ", r) {
 			return '-'
 		}
+
 		return r
 	}
+
 	return strings.Map(sanitize, nick)
 }
 
 func (b *Birc) doSend() {
 	rate := time.Millisecond * time.Duration(b.MessageDelay)
+
 	throttle := time.NewTicker(rate)
 	for msg := range b.Local {
 		<-throttle.C
+
 		username := msg.Username
 		// Optional support for the proposed RELAYMSG extension, described at
 		// https://github.com/jlu5/ircv3-specifications/blob/master/extensions/relaymsg.md
-		// nolint:nestif
+		//nolint:nestif
 		if (b.i.HasCapability("overdrivenetworks.com/relaymsg") || b.i.HasCapability("draft/relaymsg")) &&
 			b.GetBool("UseRelayMsg") {
 			username = sanitizeNick(username)
@@ -252,6 +273,7 @@ func (b *Birc) doSend() {
 				colorCode := checksum%14 + 2 // quick fix - prevent white or black color codes
 				username = fmt.Sprintf("\x03%02d%s\x0F", colorCode, msg.Username)
 			}
+
 			switch msg.Event {
 			case config.EventUserAction:
 				b.i.Cmd.Action(msg.Channel, username+msg.Text)
@@ -272,10 +294,12 @@ func (b *Birc) getClient() (*girc.Client, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	port, err := strconv.Atoi(portstr)
 	if err != nil {
 		return nil, err
 	}
+
 	user := b.GetString("UserName")
 	if user == "" {
 		user = b.GetString("Nick")
@@ -286,8 +310,10 @@ func (b *Birc) getClient() (*girc.Client, error) {
 			user = "matterbridge"
 			break
 		}
+
 		user = user[1:]
 	}
+
 	realName := b.GetString("RealName")
 	if realName == "" {
 		realName = b.GetString("Nick")
@@ -326,24 +352,29 @@ func (b *Birc) getClient() (*girc.Client, error) {
 		Debug:         debug,
 		SupportedCaps: map[string][]string{"overdrivenetworks.com/relaymsg": nil, "draft/relaymsg": nil},
 	})
+
 	return i, nil
 }
 
 func (b *Birc) endNames(client *girc.Client, event girc.Event) {
 	channel := event.Params[1]
 	sort.Strings(b.names[channel])
+
 	maxNamesPerPost := (300 / b.nicksPerRow()) * b.nicksPerRow()
 	for len(b.names[channel]) > maxNamesPerPost {
 		b.Remote <- config.Message{
 			Username: b.Nick, Text: b.formatnicks(b.names[channel][0:maxNamesPerPost]),
 			Channel: channel, Account: b.Account,
 		}
+
 		b.names[channel] = b.names[channel][maxNamesPerPost:]
 	}
+
 	b.Remote <- config.Message{
 		Username: b.Nick, Text: b.formatnicks(b.names[channel]),
 		Channel: channel, Account: b.Account,
 	}
+
 	b.names[channel] = nil
 	b.i.Handlers.Clear(girc.RPL_NAMREPLY)
 	b.i.Handlers.Clear(girc.RPL_ENDOFNAMES)
@@ -376,6 +407,7 @@ func (b *Birc) skipPrivMsg(event girc.Event) bool {
 	if relayedNick, ok := event.Tags.Get("relaymsg"); ok && relayedNick == b.Nick {
 		return true
 	}
+
 	return false
 }
 

@@ -26,13 +26,14 @@ func (b *Bmumble) decodeImage(uri string, parts *[]MessagePart) error {
 		return err
 	}
 	// Determine the file extensions for that image
-	ext, err := mime.ExtensionsByType(image.MediaType.ContentType())
+	ext, err := mime.ExtensionsByType(image.ContentType())
 	if err != nil || len(ext) == 0 {
-		b.Log.WithError(err).Infof("No file extension registered for MIME type '%s'", image.MediaType.ContentType())
+		b.Log.WithError(err).Infof("No file extension registered for MIME type '%s'", image.ContentType())
 		return err
 	}
 	// Add the image to the MessagePart slice
 	*parts = append(*parts, MessagePart{"", ext[0], image.Data})
+
 	return nil
 }
 
@@ -44,7 +45,9 @@ func (b *Bmumble) tokenize(t *string) ([]MessagePart, error) {
 	// `(.*)$` matches the remaining text to be examined in the next iteration
 	p := regexp.MustCompile(`^(?ms)(.*?)!\[[^\]]*\]\((data:image\/[^)]+)\)(.*)$`)
 	remaining := *t
+
 	var parts []MessagePart
+
 	for {
 		tokens := p.FindStringSubmatch(remaining)
 		if tokens == nil {
@@ -53,6 +56,7 @@ func (b *Bmumble) tokenize(t *string) ([]MessagePart, error) {
 			if len(pre) > 0 {
 				parts = append(parts, MessagePart{pre, "", nil})
 			}
+
 			return parts, nil
 		}
 
@@ -65,9 +69,12 @@ func (b *Bmumble) tokenize(t *string) ([]MessagePart, error) {
 		uri, err := dataurl.UnescapeToString(strings.TrimSpace(strings.ReplaceAll(tokens[2], " ", "")))
 		if err != nil {
 			b.Log.WithError(err).Info("URL unescaping failed")
+
 			remaining = strings.TrimSpace(tokens[3])
+
 			continue
 		}
+
 		err = b.decodeImage(uri, &parts)
 		if err != nil {
 			b.Log.WithError(err).Info("Decoding the image failed")
@@ -79,12 +86,15 @@ func (b *Bmumble) tokenize(t *string) ([]MessagePart, error) {
 
 func (b *Bmumble) convertHTMLtoMarkdown(html string) ([]MessagePart, error) {
 	var sb strings.Builder
+
 	err := godown.Convert(&sb, strings.NewReader(html), nil)
 	if err != nil {
 		return nil, err
 	}
+
 	markdown := sb.String()
 	b.Log.Debugf("### to markdown: %s", markdown)
+
 	return b.tokenize(&markdown)
 }
 
@@ -113,8 +123,10 @@ func (b *Bmumble) extractFiles(msg *config.Message) []config.Message {
 			} else {
 				b.Log.Infof("Not forwarding file without local data")
 			}
+
 			continue
 		}
+
 		mimeType := http.DetectContentType(*fi.Data)
 		// Mumble only supports images natively, send a link instead
 		if !strings.HasPrefix(mimeType, "image/") {
@@ -124,20 +136,25 @@ func (b *Bmumble) extractFiles(msg *config.Message) []config.Message {
 			} else {
 				b.Log.Infof("Not forwarding file of type %s", mimeType)
 			}
+
 			continue
 		}
+
 		mimeType = strings.TrimSpace(strings.Split(mimeType, ";")[0])
 		// Build data:image/...;base64,... style image URL and embed image directly into the message
 		du := dataurl.New(*fi.Data, mimeType)
+
 		dataURL, err := du.MarshalText()
 		if err != nil {
 			b.Log.WithError(err).Infof("Image Serialization into data URL failed (type: %s, length: %d)", mimeType, len(*fi.Data))
 			continue
 		}
+
 		imsg.Text = fmt.Sprintf(`<img src="%s"/>`, dataURL)
 		messages = append(messages, imsg)
 	}
 	// Remove files from original message
 	msg.Extra["file"] = nil
+
 	return messages
 }

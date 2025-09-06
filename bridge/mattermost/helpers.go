@@ -22,12 +22,14 @@ func (b *Bmattermost) doConnectWebhookBind() error {
 			})
 	case b.GetString("Token") != "":
 		b.Log.Info("Connecting using token (sending)")
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
 		}
 	case b.GetString("Login") != "":
 		b.Log.Info("Connecting using login/password (sending)")
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
@@ -40,11 +42,13 @@ func (b *Bmattermost) doConnectWebhookBind() error {
 				BindAddress:        b.GetString("WebhookBindAddress"),
 			})
 	}
+
 	return nil
 }
 
 func (b *Bmattermost) doConnectWebhookURL() error {
 	b.Log.Info("Connecting using webhookurl (sending)")
+
 	b.mh = matterhook.New(b.GetString("WebhookURL"),
 		matterhook.Config{
 			InsecureSkipVerify: b.GetBool("SkipTLSVerify"),
@@ -52,17 +56,20 @@ func (b *Bmattermost) doConnectWebhookURL() error {
 		})
 	if b.GetString("Token") != "" {
 		b.Log.Info("Connecting using token (receiving)")
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
 		}
 	} else if b.GetString("Login") != "" {
 		b.Log.Info("Connecting using login/password (receiving)")
+
 		err := b.apiLogin()
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -77,25 +84,29 @@ func (b *Bmattermost) apiLogin() error {
 	if b.GetBool("debug") {
 		b.mc.SetLogLevel("debug")
 	}
+
 	b.mc.SkipTLSVerify = b.GetBool("SkipTLSVerify")
 	b.mc.SkipVersionCheck = b.GetBool("SkipVersionCheck")
 	b.mc.NoTLS = b.GetBool("NoTLS")
 	b.Log.Infof("Connecting %s (team: %s) on %s", b.GetString("Login"), b.GetString("Team"), b.GetString("Server"))
 
-	if err := b.mc.Login(); err != nil {
+	err := b.mc.Login()
+	if err != nil {
 		return err
 	}
 
 	b.Log.Info("Connection succeeded")
 	b.TeamID = b.mc.GetTeamID()
+
 	return nil
 }
 
 // replaceAction replace the message with the correct action (/me) code
 func (b *Bmattermost) replaceAction(text string) (string, bool) {
 	if strings.HasPrefix(text, "*") && strings.HasSuffix(text, "*") {
-		return strings.Replace(text, "*", "", -1), true
+		return strings.ReplaceAll(text, "*", ""), true
 	}
+
 	return text, false
 }
 
@@ -107,6 +118,7 @@ func (b *Bmattermost) cacheAvatar(msg *config.Message) (string, error) {
 		b.Log.Debugf("Added %s to %s in avatarMap", fi.SHA, msg.UserID)
 		b.avatarMap[msg.UserID] = fi.SHA
 	}
+
 	return "", nil
 }
 
@@ -124,7 +136,7 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 	if msg.Extra != nil {
 		// this sends a message only if we received a config.EVENT_FILE_FAILURE_SIZE
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-			rmsg := rmsg // scopelint
+			// scopelint
 			iconURL := config.GetIconURL(&rmsg, b.GetString("iconurl"))
 			matterMessage := matterhook.OMessage{
 				IconURL:  iconURL,
@@ -133,8 +145,10 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 				Text:     rmsg.Text,
 				Props:    make(map[string]interface{}),
 			}
+
 			matterMessage.Props["matterbridge_"+b.uuid] = true
-			if err := b.mh.Send(matterMessage); err != nil {
+			err := b.mh.Send(matterMessage)
+			if err != nil {
 				b.Log.Errorf("sendWebhook failed: %s ", err)
 			}
 		}
@@ -151,6 +165,7 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 	}
 
 	iconURL := config.GetIconURL(&msg, b.GetString("iconurl"))
+
 	matterMessage := matterhook.OMessage{
 		IconURL:  iconURL,
 		Channel:  msg.Channel,
@@ -161,12 +176,15 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 	if msg.Avatar != "" {
 		matterMessage.IconURL = msg.Avatar
 	}
+
 	matterMessage.Props["matterbridge_"+b.uuid] = true
+
 	err := b.mh.Send(matterMessage)
 	if err != nil {
 		b.Log.Info(err)
 		return "", err
 	}
+
 	return "", nil
 }
 
@@ -198,6 +216,7 @@ func (b *Bmattermost) skipMessage(message *matterclient.Message) bool {
 		}
 
 		b.Log.Debugf("Sending JOIN_LEAVE event from %s to gateway", b.Account)
+
 		b.Remote <- config.Message{
 			Username: "system",
 			Text:     message.Text,
@@ -205,6 +224,7 @@ func (b *Bmattermost) skipMessage(message *matterclient.Message) bool {
 			Account:  b.Account,
 			Event:    config.EventJoinLeave,
 		}
+
 		return true
 	}
 
@@ -245,10 +265,11 @@ func (b *Bmattermost) skipMessage(message *matterclient.Message) bool {
 	}
 
 	// only handle posted, edited or deleted events
-	if !(message.Raw.EventType() == "posted" || message.Raw.EventType() == model.WebsocketEventPostEdited ||
-		message.Raw.EventType() == model.WebsocketEventPostDeleted) {
+	if message.Raw.EventType() != "posted" && message.Raw.EventType() != model.WebsocketEventPostEdited &&
+		message.Raw.EventType() != model.WebsocketEventPostDeleted {
 		return true
 	}
+
 	return false
 }
 

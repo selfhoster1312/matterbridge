@@ -37,18 +37,23 @@ func (b *Btalk) Connect() error {
 			InsecureSkipVerify: b.GetBool("SkipTLSVerify"), //nolint:gosec
 		},
 	}
+
 	var err error
+
 	b.user, err = user.NewUser(b.GetString("Server"), b.GetString("Login"), b.GetString("Password"), tconfig)
 	if err != nil {
 		b.Log.Error("Config could not be used")
 		return err
 	}
+
 	_, err = b.user.Capabilities()
 	if err != nil {
 		b.Log.Error("Cannot Connect")
 		return err
 	}
+
 	b.Log.Info("Connected")
+
 	return nil
 }
 
@@ -56,6 +61,7 @@ func (b *Btalk) Disconnect() error {
 	for _, r := range b.rooms {
 		r.ctxCancel()
 	}
+
 	return nil
 }
 
@@ -64,19 +70,21 @@ func (b *Btalk) JoinChannel(channel config.ChannelInfo) error {
 	if err != nil {
 		return err
 	}
+
 	newRoom := Broom{
 		room: tr,
 	}
 	newRoom.ctx, newRoom.ctxCancel = context.WithCancel(context.Background())
+
 	c, err := newRoom.room.ReceiveMessages(newRoom.ctx)
 	if err != nil {
 		return err
 	}
+
 	b.rooms = append(b.rooms, newRoom)
 
 	go func() {
 		for msg := range c {
-			msg := msg
 
 			if msg.Error != nil {
 				b.Log.Errorf("Fatal message poll error: %s\n", msg.Error)
@@ -100,9 +108,9 @@ func (b *Btalk) JoinChannel(channel config.ChannelInfo) error {
 				b.handleSendingMessage(&msg, &newRoom)
 				continue
 			}
-
 		}
 	}()
+
 	return nil
 }
 
@@ -129,6 +137,7 @@ func (b *Btalk) Send(msg config.Message) (string, error) {
 
 			return "", nil
 		}
+
 		return strconv.Itoa(sentMessage.ID), nil
 	}
 
@@ -138,10 +147,12 @@ func (b *Btalk) Send(msg config.Message) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		data, err := r.room.DeleteMessage(messageID)
 		if err != nil {
 			return "", err
 		}
+
 		return strconv.Itoa(data.ID), nil
 	}
 
@@ -155,6 +166,7 @@ func (b *Btalk) getRoom(token string) *Broom {
 			return &r
 		}
 	}
+
 	return nil
 }
 
@@ -205,7 +217,9 @@ func (b *Btalk) handleSendingFile(msg *config.Message, r *Broom) error {
 		if fi.Comment != "" {
 			message += fi.Comment + " "
 		}
+
 		message += fi.URL
+
 		_, err := b.sendText(r, msg, message)
 		if err != nil {
 			return err
@@ -238,6 +252,7 @@ func (b *Btalk) handleSendingMessage(msg *ocs.TalkRoomMessageData, r *Broom) {
 	}
 
 	b.Log.Debugf("<= Message is %#v", remoteMessage)
+
 	b.Remote <- remoteMessage
 }
 
@@ -250,6 +265,7 @@ func (b *Btalk) handleDeletingMessage(msg *ocs.TalkRoomMessageData, r *Broom) {
 		Account: b.Account,
 	}
 	b.Log.Debugf("<= Message being deleted is %#v", remoteMessage)
+
 	b.Remote <- remoteMessage
 }
 

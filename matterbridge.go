@@ -25,6 +25,7 @@ var (
 
 func main() {
 	flag.Parse()
+
 	if *flagVersion {
 		fmt.Printf("version: %s %s\n", version.Release, version.GitHash)
 		return
@@ -34,7 +35,8 @@ func main() {
 	logger := rootLogger.WithFields(logrus.Fields{"prefix": "main"})
 
 	if *flagGops {
-		if err := agent.Listen(agent.Options{}); err != nil {
+		err := agent.Listen(agent.Options{})
+		if err != nil {
 			logger.Errorf("Failed to start gops agent: %#v", err)
 		} else {
 			defer agent.Close()
@@ -42,6 +44,7 @@ func main() {
 	}
 
 	logger.Printf("Running version %s %s", version.Release, version.GitHash)
+
 	if strings.Contains(version.Release, "-dev") {
 		logger.Println("WARNING: THIS IS A DEVELOPMENT VERSION. Things may break.")
 	}
@@ -50,7 +53,7 @@ func main() {
 	cfg.BridgeValues().General.Debug = *flagDebug
 
 	// if logging to a file, ensure it is closed when the program terminates
-	// nolint:errcheck
+	//nolint:errcheck
 	defer func() {
 		if f, ok := rootLogger.Out.(*os.File); ok {
 			f.Sync()
@@ -62,10 +65,13 @@ func main() {
 	if err != nil {
 		logger.Fatalf("Starting gateway failed: %s", err)
 	}
+
 	if err = r.Start(); err != nil {
 		logger.Fatalf("Starting gateway failed: %s", err)
 	}
+
 	logger.Printf("Gateway(s) started successfully. Now relaying messages")
+
 	select {}
 }
 
@@ -103,5 +109,6 @@ func setupLogger() *logrus.Logger {
 		logger.Level = logrus.DebugLevel
 		logger.WithFields(logrus.Fields{"prefix": "main"}).Info("Enabling debug logging.")
 	}
+
 	return logger
 }

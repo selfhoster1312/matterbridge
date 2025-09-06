@@ -1,3 +1,4 @@
+//go:build !novk
 // +build !novk
 
 package bridgemap
