@@ -111,7 +111,8 @@ func (b *Bmattermost) replaceAction(text string) (string, bool) {
 }
 
 func (b *Bmattermost) cacheAvatar(msg *config.Message) (string, error) {
-	fi := msg.Extra["file"][0].(config.FileInfo)
+	file := msg.Extra["file"][0]
+	fi, _ := file.(config.FileInfo)
 	/* if we have a sha we have successfully uploaded the file to the media server,
 	so we can now cache the sha */
 	if fi.SHA != "" {
@@ -156,7 +157,7 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 		// webhook doesn't support file uploads, so we add the url manually
 		if len(msg.Extra["file"]) > 0 {
 			for _, f := range msg.Extra["file"] {
-				fi := f.(config.FileInfo)
+				fi, _ := f.(config.FileInfo)
 				if fi.URL != "" {
 					msg.Text += " " + fi.URL
 				}
@@ -259,7 +260,8 @@ func (b *Bmattermost) skipMessage(message *matterclient.Message) bool {
 	}
 
 	// ignore messages from other teams than ours
-	if message.Raw.GetData()["team_id"].(string) != b.TeamID {
+	team_id, _ := message.Raw.GetData()["team_id"].(string)
+	if team_id != b.TeamID {
 		b.Log.Debug("message from other team, ignoring")
 		return true
 	}

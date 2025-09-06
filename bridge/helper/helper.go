@@ -152,7 +152,7 @@ func HandleExtra(msg *config.Message, general *config.Protocol) []config.Message
 
 	rmsg := []config.Message{}
 	for _, f := range extra[config.EventFileFailureSize] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		text := fmt.Sprintf("file %s too big to download (%#v > allowed size: %#v)", fi.Name, fi.Size, general.MediaDownloadSize)
 		rmsg = append(rmsg, config.Message{
 			Text:     text,

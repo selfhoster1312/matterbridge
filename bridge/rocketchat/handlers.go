@@ -142,7 +142,7 @@ func (b *Brocketchat) handleDownloadFile(rmsg *config.Message, file *models.Atta
 
 func (b *Brocketchat) handleUploadFile(msg *config.Message) error {
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		err := b.uploadFile(&fi, b.getChannelID(msg.Channel))
 		if err != nil {
 			return err

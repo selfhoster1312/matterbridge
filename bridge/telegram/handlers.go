@@ -550,7 +550,7 @@ func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid
 	var media []interface{}
 
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		file := tgbotapi.FileBytes{
 			Name:  fi.Name,
 			Bytes: *fi.Data,

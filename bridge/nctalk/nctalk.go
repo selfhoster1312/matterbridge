@@ -208,7 +208,7 @@ func (b *Btalk) handleFiles(mmsg *config.Message, message *ocs.TalkRoomMessageDa
 
 func (b *Btalk) handleSendingFile(msg *config.Message, r *Broom) error {
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		if fi.URL == "" {
 			continue
 		}

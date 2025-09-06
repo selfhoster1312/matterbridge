@@ -265,7 +265,7 @@ func (b *Btelegram) intParentID(parentID string) (int, error) {
 }
 
 func (b *Btelegram) cacheAvatar(msg *config.Message) (string, error) {
-	fi := msg.Extra["file"][0].(config.FileInfo)
+	fi, _ := msg.Extra["file"][0].(config.FileInfo)
 	/* if we have a sha we have successfully uploaded the file to the media server,
 	so we can now cache the sha */
 	if fi.SHA != "" {

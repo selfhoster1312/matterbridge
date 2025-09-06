@@ -27,7 +27,8 @@ func (b *Bmsteams) findFile(weburl string) (string, error) {
 	}
 
 	if url, ok := item.GetAdditionalData("@microsoft.graph.downloadUrl"); ok {
-		return url.(string), nil
+		url2, _ := url.(string)
+		return url2, nil
 	}
 
 	return "", nil

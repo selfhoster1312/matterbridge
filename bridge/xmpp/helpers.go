@@ -20,7 +20,7 @@ func getAvatar(av map[string]string, userid string, general *config.Protocol) st
 }
 
 func (b *Bxmpp) cacheAvatar(msg *config.Message) string {
-	fi := msg.Extra["file"][0].(config.FileInfo)
+	fi, _ := msg.Extra["file"][0].(config.FileInfo)
 	/* if we have a sha we have successfully uploaded the file to the media server,
 	so we can now cache the sha */
 	if fi.SHA != "" {

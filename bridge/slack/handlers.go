@@ -252,7 +252,9 @@ func (b *Bslack) handleMessageEvent(ev *slack.MessageEvent) (*config.Message, er
 
 func (b *Bslack) handleFileDeletedEvent(ev *slack.FileDeletedEvent) (*config.Message, error) {
 	if rawChannel, ok := b.cache.Get(cfileDownloadChannel + ev.FileID); ok {
-		channel, err := b.channels.getChannelByID(rawChannel.(string))
+		rawChannel2, _ := rawChannel.(string)
+		
+		channel, err := b.channels.getChannelByID(rawChannel2)
 		if err != nil {
 			return nil, err
 		}
@@ -437,10 +439,19 @@ func (b *Bslack) handleGetChannelMembers(rmsg *config.Message) bool {
 // (the assumption is that such name collisions will not occur within the given
 // timeframes).
 func (b *Bslack) fileCached(file *slack.File) bool {
-	if ts, ok := b.cache.Get("file" + file.ID); ok && time.Since(ts.(time.Time)) < time.Minute {
-		return true
-	} else if ts, ok = b.cache.Get("filename" + file.Name); ok && time.Since(ts.(time.Time)) < 10*time.Second {
-		return true
+	ts, ok := b.cache.Get("file" + file.ID)
+	if ok {
+		t, _ := ts.(time.Time)
+		if time.Since(t) < time.Minute {
+			return true
+		}
+	}
+	ts, ok = b.cache.Get("filename" + file.Name)
+	if ok {
+		t, _ := ts.(time.Time)
+		if time.Since(t) < 10*time.Second {
+			return true
+		}
 	}
 
 	return false

@@ -64,7 +64,10 @@ func (b *Birc) handleFiles(msg *config.Message) bool {
 	}
 
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, ok := f.(config.FileInfo)
+		if !ok {
+			return false
+		}
 		if fi.Comment != "" {
 			msg.Text += fi.Comment + " : "
 		}

@@ -267,7 +267,8 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 	// If we have native slack_attachments add them.
 	var attachs []slack.Attachment
 	for _, attach := range msg.Extra[sSlackAttachment] {
-		attachs = append(attachs, attach.([]slack.Attachment)...)
+		attach2, _ := attach.([]slack.Attachment)
+		attachs = append(attachs, attach2...)
 	}
 
 	iconURL := config.GetIconURL(&msg, b.GetString(iconURLConfig))
@@ -542,7 +543,8 @@ func (b *Bslack) prepareMessageOptions(msg *config.Message) []slack.MsgOption {
 	// add slack attachments (from another slack bridge)
 	if msg.Extra != nil {
 		for _, attach := range msg.Extra[sSlackAttachment] {
-			attachments = append(attachments, attach.([]slack.Attachment)...)
+			attach2, _ := attach.([]slack.Attachment)
+			attachments = append(attachments, attach2...)
 		}
 	}
 
@@ -571,7 +573,7 @@ func (b *Bslack) createAttach(extra map[string][]interface{}) []slack.Attachment
 	var attachements []slack.Attachment
 
 	for _, v := range extra["attachments"] {
-		entry := v.(map[string]interface{})
+		entry, _ := v.(map[string]interface{})
 		s := slack.Attachment{
 			Fallback:   extractStringField(entry, "fallback"),
 			Color:      extractStringField(entry, "color"),
