@@ -11,7 +11,7 @@ import (
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/42wim/matterbridge/bridge/helper"
 	"github.com/davecgh/go-spew/spew"
-	tgbotapi "github.com/matterbridge/telegram-bot-api/v6"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 )
 
 func (b *Btelegram) handleUpdate(rmsg *config.Message, message, posted, edited *tgbotapi.Message) *tgbotapi.Message {
@@ -58,32 +58,30 @@ func (b *Btelegram) handleGroups(rmsg *config.Message, message *tgbotapi.Message
 
 // handleForwarded handles forwarded messages
 func (b *Btelegram) handleForwarded(rmsg *config.Message, message *tgbotapi.Message) {
-	if message.ForwardDate == 0 {
+	// TODO: apparently this is only for manual forwards not automated forwards
+	// See https://pkg.go.dev/github.com/OvyFlash/telegram-bot-api documentation
+	if message.ForwardOrigin == nil {
 		return
 	}
 
-	if message.ForwardFromChat != nil && message.ForwardFrom == nil {
-		rmsg.Text = "Forwarded from " + message.ForwardFromChat.Title + ": " + rmsg.Text
-		return
-	}
+	origin := message.ForwardOrigin
 
-	if message.ForwardFrom == nil {
-		rmsg.Text = "Forwarded from " + unknownUser + ": " + rmsg.Text
+	// Apparently SenderChat is for normal "groups", and Chat
+	// for read-only "channels". TODO: support channels
+	if origin.SenderChat != nil {
+		rmsg.Text = "Forwarded from " + origin.SenderChat.Title + ": " + rmsg.Text
 		return
 	}
 
 	usernameForward := ""
 	if b.GetBool("UseFirstName") {
-		usernameForward = message.ForwardFrom.FirstName
-	}
-	if b.GetBool("UseFullName") {
-		usernameForward = message.ForwardFrom.FirstName + " " + message.ForwardFrom.LastName
-	}
-
-	if usernameForward == "" {
-		usernameForward = message.ForwardFrom.UserName
+		usernameForward = origin.SenderUser.FirstName
+	} else if b.GetBool("UseFullName") {
+		usernameForward = origin.SenderUser.FirstName + " " + origin.SenderUser.LastName
+	} else {
+		usernameForward = origin.SenderUser.UserName
 		if usernameForward == "" {
-			usernameForward = message.ForwardFrom.FirstName
+			usernameForward = origin.SenderUser.FirstName
 		}
 	}
 
@@ -510,7 +508,7 @@ func (b *Btelegram) handleEdit(msg *config.Message, chatid int64) (string, error
 
 // handleUploadFile handles native upload of files
 func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid int, parentID int) (string, error) {
-	var media []interface{}
+	var media []tgbotapi.InputMedia
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
 
@@ -539,19 +537,19 @@ func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid
 		case ".jpg", ".jpe", ".png":
 			pc := tgbotapi.NewInputMediaPhoto(file)
 			pc.Caption, pc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
-			media = append(media, pc)
+			media = append(media, &pc)
 		case ".mp4", ".m4v":
 			vc := tgbotapi.NewInputMediaVideo(file)
 			vc.Caption, vc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
-			media = append(media, vc)
+			media = append(media, &vc)
 		case ".mp3", ".oga":
 			ac := tgbotapi.NewInputMediaAudio(file)
 			ac.Caption, ac.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
-			media = append(media, ac)
+			media = append(media, &ac)
 		case ".ogg":
 			voc := tgbotapi.NewVoice(chatid, file)
 			voc.Caption, voc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
-			voc.ReplyToMessageID = parentID
+			voc.ReplyParameters.MessageID = parentID
 			res, err := b.c.Send(voc)
 			if err != nil {
 				return "", err
@@ -560,7 +558,7 @@ func (b *Btelegram) handleUploadFile(msg *config.Message, chatid int64, threadid
 		default:
 			dc := tgbotapi.NewInputMediaDocument(file)
 			dc.Caption, dc.ParseMode = TGGetParseMode(b, msg.Username, fi.Comment)
-			media = append(media, dc)
+			media = append(media, &dc)
 		}
 	}
 

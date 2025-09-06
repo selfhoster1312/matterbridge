@@ -18,6 +18,8 @@ github.com/Benau/tgsconverter v0.0.0-20210809170556-99f4a4f6337f/go.mod h1:AQiQK
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/Jeffail/gabs v1.4.0 h1://5fYRRTq1edjfIrQGvdkcd22pkYUrHZ5YC/H2GJVAo=
 github.com/Jeffail/gabs v1.4.0/go.mod h1:6xMvQMK4k33lb7GUUpaAPh6nKMmemQeg5d4gn7/bOXc=
+github.com/OvyFlash/telegram-bot-api v0.0.0-20250903213241-2ddbaeebe9a5 h1:KxVUneacfcaw9rMeOWk2DnKJZYMfI4Mrc2MtdYYP85k=
+github.com/OvyFlash/telegram-bot-api v0.0.0-20250903213241-2ddbaeebe9a5/go.mod h1:2nRUdsKyWhvezqW/rBGWEQdcTQeTtnbSNd2dgx76WYA=
 github.com/Philipp15b/go-steam v1.0.1-0.20200727090957-6ae9b3c0a560 h1:ItnC9PEEMESzTbFayxrhKBbuFQOXDBI8yy7NudTcEWs=
 github.com/Philipp15b/go-steam v1.0.1-0.20200727090957-6ae9b3c0a560/go.mod h1:o38AwUFFS4gzbjSoyIgrZ1h9UeDrKwcci1Pj6baifvI=
 github.com/Rhymen/go-whatsapp v0.1.2-0.20211102134409-31a2e740845c h1:4mIZQXKYBymQ9coA82nNyG/CjicMNLBZ8cPVrhNUM3g=

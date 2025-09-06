@@ -10,7 +10,7 @@ import (
 	"github.com/42wim/matterbridge/bridge"
 	"github.com/42wim/matterbridge/bridge/config"
 	"github.com/42wim/matterbridge/bridge/helper"
-	tgbotapi "github.com/matterbridge/telegram-bot-api/v6"
+	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 )
 
 const (
@@ -193,8 +193,10 @@ func (b *Btelegram) sendMessage(chatid int64, topicid int, username, text string
 	if topicid != 0 {
 		m.BaseChat.MessageThreadID = topicid
 	}
-	m.ReplyToMessageID = parentID
-	m.DisableWebPagePreview = b.GetBool("DisableWebPagePreview")
+	// TODO: is this correct when we don't set it? is it 0?
+	//m.BaseChat.ReplyParameters.MessageID = parentID
+	// TODO
+	//m.DisableWebPagePreview = b.GetBool("DisableWebPagePreview")
 
 	res, err := b.c.Send(m)
 	if err != nil {
@@ -204,16 +206,21 @@ func (b *Btelegram) sendMessage(chatid int64, topicid int, username, text string
 }
 
 // sendMediaFiles native upload media files via media group
-func (b *Btelegram) sendMediaFiles(msg *config.Message, chatid int64, threadid int, parentID int, media []interface{}) (string, error) {
+func (b *Btelegram) sendMediaFiles(msg *config.Message, chatid int64, threadid int, parentID int, media []tgbotapi.InputMedia) (string, error) {
+
 	if len(media) == 0 {
 		return "", nil
 	}
+
 	mg := tgbotapi.MediaGroupConfig{
 		BaseChat: tgbotapi.BaseChat{
-			ChatID:           chatid,
+			ChatConfig: tgbotapi.ChatConfig {
+				ChatID:           chatid,
+				ChannelUsername:  msg.Username,
+			},
 			MessageThreadID:  threadid,
-			ChannelUsername:  msg.Username,
-			ReplyToMessageID: parentID,
+			// TODO
+			//ReplyToMessageID: parentID,
 		},
 		Media: media,
 	}

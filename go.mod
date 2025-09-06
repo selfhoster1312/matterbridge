@@ -26,7 +26,6 @@ require (
 	github.com/matterbridge/gozulipbot v0.0.0-20211023205727-a19d6c1f3b75
 	github.com/matterbridge/logrus-prefixed-formatter v0.5.3-0.20200523233437-d971309a77ba
 	github.com/matterbridge/matterclient v0.0.0-20240817214420-3d4c3aef3dc1
-	github.com/matterbridge/telegram-bot-api/v6 v6.5.0
 	github.com/mattermost/mattermost/server/public v0.1.6
 	github.com/mattn/godown v0.0.1
 	github.com/mdp/qrterminal v1.0.1
@@ -60,6 +59,7 @@ require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/Benau/go_rlottie v0.0.0-20210807002906-98c1b2421989 // indirect
 	github.com/Jeffail/gabs v1.4.0 // indirect
+	github.com/OvyFlash/telegram-bot-api v0.0.0-20250903213241-2ddbaeebe9a5 // indirect
 	github.com/apex/log v1.9.0 // indirect
 	github.com/av-elier/go-decimal-to-rational v0.0.0-20191127152832-89e6aad02ecf // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
@@ -150,4 +150,6 @@ require (
 
 //replace github.com/matrix-org/gomatrix => github.com/matterbridge/gomatrix v0.0.0-20220205235239-607eb9ee6419
 
-go 1.22.0
+go 1.23
+
+toolchain go1.23.3

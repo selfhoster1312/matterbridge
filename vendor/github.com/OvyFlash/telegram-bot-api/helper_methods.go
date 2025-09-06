@@ -17,19 +17,73 @@ import (
 func NewMessage(chatID int64, text string) MessageConfig {
 	return MessageConfig{
 		BaseChat: BaseChat{
-			ChatID:           chatID,
-			ReplyToMessageID: 0,
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
 		},
-		Text:                  text,
-		DisableWebPagePreview: false,
+		Text: text,
+		LinkPreviewOptions: LinkPreviewOptions{
+			IsDisabled: false,
+		},
 	}
 }
 
 // NewDeleteMessage creates a request to delete a message.
 func NewDeleteMessage(chatID int64, messageID int) DeleteMessageConfig {
 	return DeleteMessageConfig{
-		ChatID:    chatID,
-		MessageID: messageID,
+		BaseChatMessage: BaseChatMessage{
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
+			MessageID: messageID,
+		},
+	}
+}
+
+// NewDeleteMessages creates a request to delete multiple messages. The messages have to be
+// in the same chat. Provide the message ids as an array of integers
+func NewDeleteMessages(chatID int64, messageIDs []int) DeleteMessagesConfig {
+	return DeleteMessagesConfig{
+		BaseChatMessages: BaseChatMessages{
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
+			MessageIDs: messageIDs,
+		},
+	}
+}
+
+// NewVerifyUser verifies user on behalf of the organization
+// which is represented by the bot
+func NewVerifyUser(userID int64, customDescription string) VerifyUserConfig {
+	return VerifyUserConfig{
+		UserID:            userID,
+		CustomDescription: customDescription,
+	}
+}
+
+// NewVerifyChat verifies chat on behalf of the organization
+// which is represented by the bot
+func NewVerifyChat(chat ChatConfig, customDescription string) VerifyChatConfig {
+	return VerifyChatConfig{
+		Chat:              chat,
+		CustomDescription: customDescription,
+	}
+}
+
+// NewRemoveUserVerification removes verification from a user who is currently
+// verified on behalf of the organization represented by the bot.
+func NewRemoveUserVerification(userID int64) RemoveUserVerificationConfig {
+	return RemoveUserVerificationConfig{
+		UserID:            userID,
+	}
+}
+
+// NewRemoveChatVerification removes verification from a chat that is currently
+//  verified on behalf of the organization represented by the bot.
+func NewRemoveChatVerification(chat ChatConfig) RemoveChatVerificationConfig {
+	return RemoveChatVerificationConfig{
+		Chat:              chat,
 	}
 }
 
@@ -41,7 +95,9 @@ func NewDeleteMessage(chatID int64, messageID int) DeleteMessageConfig {
 func NewMessageToChannel(username string, text string) MessageConfig {
 	return MessageConfig{
 		BaseChat: BaseChat{
-			ChannelUsername: username,
+			ChatConfig: ChatConfig{
+				ChannelUsername: username,
+			},
 		},
 		Text: text,
 	}
@@ -53,9 +109,9 @@ func NewMessageToChannel(username string, text string) MessageConfig {
 // and messageID is the ID of the original message.
 func NewForward(chatID int64, fromChatID int64, messageID int) ForwardConfig {
 	return ForwardConfig{
-		BaseChat:   BaseChat{ChatID: chatID},
-		FromChatID: fromChatID,
-		MessageID:  messageID,
+		BaseChat:  BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
+		FromChat:  ChatConfig{ChatID: fromChatID},
+		MessageID: messageID,
 	}
 }
 
@@ -65,9 +121,9 @@ func NewForward(chatID int64, fromChatID int64, messageID int) ForwardConfig {
 // and messageID is the ID of the original message.
 func NewCopyMessage(chatID int64, fromChatID int64, messageID int) CopyMessageConfig {
 	return CopyMessageConfig{
-		BaseChat:   BaseChat{ChatID: chatID},
-		FromChatID: fromChatID,
-		MessageID:  messageID,
+		BaseChat:  BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
+		FromChat:  ChatConfig{ChatID: fromChatID},
+		MessageID: messageID,
 	}
 }
 
@@ -80,7 +136,7 @@ func NewCopyMessage(chatID int64, fromChatID int64, messageID int) CopyMessageCo
 func NewPhoto(chatID int64, file RequestFileData) PhotoConfig {
 	return PhotoConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 	}
@@ -92,10 +148,8 @@ func NewPhoto(chatID int64, file RequestFileData) PhotoConfig {
 func NewPhotoToChannel(username string, file RequestFileData) PhotoConfig {
 	return PhotoConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{
-				ChannelUsername: username,
-			},
-			File: file,
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChannelUsername: username}},
+			File:     file,
 		},
 	}
 }
@@ -104,7 +158,7 @@ func NewPhotoToChannel(username string, file RequestFileData) PhotoConfig {
 func NewAudio(chatID int64, file RequestFileData) AudioConfig {
 	return AudioConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 	}
@@ -114,7 +168,7 @@ func NewAudio(chatID int64, file RequestFileData) AudioConfig {
 func NewDocument(chatID int64, file RequestFileData) DocumentConfig {
 	return DocumentConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 	}
@@ -124,9 +178,32 @@ func NewDocument(chatID int64, file RequestFileData) DocumentConfig {
 func NewSticker(chatID int64, file RequestFileData) StickerConfig {
 	return StickerConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
+	}
+}
+
+// NewCustomEmojiStickerSetThumbnal creates a new setCustomEmojiStickerSetThumbnal request
+func NewCustomEmojiStickerSetThumbnal(name, customEmojiID string) SetCustomEmojiStickerSetThumbnailConfig {
+	return SetCustomEmojiStickerSetThumbnailConfig{
+		Name:          name,
+		CustomEmojiID: customEmojiID,
+	}
+}
+
+// NewStickerSetTitle creates a new setStickerSetTitle request
+func NewStickerSetTitle(name, title string) SetStickerSetTitleConfig {
+	return SetStickerSetTitleConfig{
+		Name:  name,
+		Title: title,
+	}
+}
+
+// NewDeleteStickerSet creates a new deleteStickerSet request
+func NewDeleteStickerSet(name, title string) DeleteStickerSetConfig {
+	return DeleteStickerSetConfig{
+		Name: name,
 	}
 }
 
@@ -134,7 +211,7 @@ func NewSticker(chatID int64, file RequestFileData) StickerConfig {
 func NewVideo(chatID int64, file RequestFileData) VideoConfig {
 	return VideoConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 	}
@@ -144,7 +221,7 @@ func NewVideo(chatID int64, file RequestFileData) VideoConfig {
 func NewAnimation(chatID int64, file RequestFileData) AnimationConfig {
 	return AnimationConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 	}
@@ -157,7 +234,7 @@ func NewAnimation(chatID int64, file RequestFileData) AnimationConfig {
 func NewVideoNote(chatID int64, length int, file RequestFileData) VideoNoteConfig {
 	return VideoNoteConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 		Length: length,
@@ -168,7 +245,7 @@ func NewVideoNote(chatID int64, length int, file RequestFileData) VideoNoteConfi
 func NewVoice(chatID int64, file RequestFileData) VoiceConfig {
 	return VoiceConfig{
 		BaseFile: BaseFile{
-			BaseChat: BaseChat{ChatID: chatID},
+			BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 			File:     file,
 		},
 	}
@@ -176,12 +253,20 @@ func NewVoice(chatID int64, file RequestFileData) VoiceConfig {
 
 // NewMediaGroup creates a new media group. Files should be an array of
 // two to ten InputMediaPhoto or InputMediaVideo.
-func NewMediaGroup(chatID int64, files []interface{}) MediaGroupConfig {
+func NewMediaGroup(chatID int64, files []InputMedia) MediaGroupConfig {
 	return MediaGroupConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
-		Media:  files,
+		Media: files,
+	}
+}
+
+// NewBaseInputMedia creates a new BaseInputMedia.
+func NewBaseInputMedia(mediaType string, media RequestFileData) BaseInputMedia {
+	return BaseInputMedia{
+		Type:  mediaType,
+		Media: media,
 	}
 }
 
@@ -239,7 +324,7 @@ func NewInputMediaDocument(media RequestFileData) InputMediaDocument {
 func NewContact(chatID int64, phoneNumber, firstName string) ContactConfig {
 	return ContactConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
 		PhoneNumber: phoneNumber,
 		FirstName:   firstName,
@@ -252,7 +337,7 @@ func NewContact(chatID int64, phoneNumber, firstName string) ContactConfig {
 func NewLocation(chatID int64, latitude float64, longitude float64) LocationConfig {
 	return LocationConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
 		Latitude:  latitude,
 		Longitude: longitude,
@@ -263,7 +348,7 @@ func NewLocation(chatID int64, latitude float64, longitude float64) LocationConf
 func NewVenue(chatID int64, title, address string, latitude, longitude float64) VenueConfig {
 	return VenueConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
 		Title:     title,
 		Address:   address,
@@ -278,7 +363,7 @@ func NewVenue(chatID int64, title, address string, latitude, longitude float64) 
 // chatID is where to send it, action should be set via Chat constants.
 func NewChatAction(chatID int64, action string) ChatActionConfig {
 	return ChatActionConfig{
-		BaseChat: BaseChat{ChatID: chatID},
+		BaseChat: BaseChat{ChatConfig: ChatConfig{ChatID: chatID}},
 		Action:   action,
 	}
 }
@@ -291,6 +376,17 @@ func NewUserProfilePhotos(userID int64) UserProfilePhotosConfig {
 		UserID: userID,
 		Offset: 0,
 		Limit:  0,
+	}
+}
+
+// NewSetUserEmojiStatus changes the user's emoji status.
+//
+// userID is the ID of the user you wish to get profile photos from.
+func NewSetUserEmojiStatus(userID int64, emojiID string, statusExpDate int64) SetUserEmojiStatusConfig {
+	return SetUserEmojiStatusConfig{
+		UserID:                    userID,
+		EmojiStatusCustomEmojiID:  emojiID,
+		EmojiStatusExpirationDate: statusExpDate,
 	}
 }
 
@@ -311,7 +407,6 @@ func NewUpdate(offset int) UpdateConfig {
 // link is the url parsable link you wish to get the updates.
 func NewWebhook(link string) (WebhookConfig, error) {
 	u, err := url.Parse(link)
-
 	if err != nil {
 		return WebhookConfig{}, err
 	}
@@ -327,7 +422,6 @@ func NewWebhook(link string) (WebhookConfig, error) {
 // file contains a string to a file, FileReader, or FileBytes.
 func NewWebhookWithCert(link string, file RequestFileData) (WebhookConfig, error) {
 	u, err := url.Parse(link)
-
 	if err != nil {
 		return WebhookConfig{}, err
 	}
@@ -565,12 +659,56 @@ func NewInlineQueryResultVenue(id, title, address string, latitude, longitude fl
 	}
 }
 
+// NewEditMessageMedia allows you to edit the media content of a message.
+func NewEditMessageMedia(chatID int64, messageID int, inputMedia InputMedia) EditMessageMediaConfig {
+	return EditMessageMediaConfig{
+		BaseEdit: BaseEdit{
+			BaseChatMessage: BaseChatMessage{
+				ChatConfig: ChatConfig{
+					ChatID: chatID,
+				},
+				MessageID: messageID,
+			},
+		},
+		Media: inputMedia,
+	}
+}
+
+// NewEditMessagePhoto allows you to edit the photo content of a message.
+func NewEditMessagePhoto(chatID int64, messageID int, inputPhoto InputMediaPhoto) EditMessageMediaConfig {
+	return NewEditMessageMedia(chatID, messageID, &inputPhoto)
+}
+
+// NewEditMessageVideo allows you to edit the video content of a message.
+func NewEditMessageVideo(chatID int64, messageID int, inputVideo InputMediaVideo) EditMessageMediaConfig {
+	return NewEditMessageMedia(chatID, messageID, &inputVideo)
+}
+
+// NewEditMessageAnimation allows you to edit the animation content of a message.
+func NewEditMessageAnimation(chatID int64, messageID int, inputAnimation InputMediaAnimation) EditMessageMediaConfig {
+	return NewEditMessageMedia(chatID, messageID, &inputAnimation)
+}
+
+// NewEditMessageAudio allows you to edit the audio content of a message.
+func NewEditMessageAudio(chatID int64, messageID int, inputAudio InputMediaAudio) EditMessageMediaConfig {
+	return NewEditMessageMedia(chatID, messageID, &inputAudio)
+}
+
+// NewEditMessageDocument allows you to edit the document content of a message.
+func NewEditMessageDocument(chatID int64, messageID int, inputDocument InputMediaDocument) EditMessageMediaConfig {
+	return NewEditMessageMedia(chatID, messageID, &inputDocument)
+}
+
 // NewEditMessageText allows you to edit the text of a message.
 func NewEditMessageText(chatID int64, messageID int, text string) EditMessageTextConfig {
 	return EditMessageTextConfig{
 		BaseEdit: BaseEdit{
-			ChatID:    chatID,
-			MessageID: messageID,
+			BaseChatMessage: BaseChatMessage{
+				ChatConfig: ChatConfig{
+					ChatID: chatID,
+				},
+				MessageID: messageID,
+			},
 		},
 		Text: text,
 	}
@@ -580,8 +718,12 @@ func NewEditMessageText(chatID int64, messageID int, text string) EditMessageTex
 func NewEditMessageTextAndMarkup(chatID int64, messageID int, text string, replyMarkup InlineKeyboardMarkup) EditMessageTextConfig {
 	return EditMessageTextConfig{
 		BaseEdit: BaseEdit{
-			ChatID:      chatID,
-			MessageID:   messageID,
+			BaseChatMessage: BaseChatMessage{
+				ChatConfig: ChatConfig{
+					ChatID: chatID,
+				},
+				MessageID: messageID,
+			},
 			ReplyMarkup: &replyMarkup,
 		},
 		Text: text,
@@ -592,8 +734,12 @@ func NewEditMessageTextAndMarkup(chatID int64, messageID int, text string, reply
 func NewEditMessageCaption(chatID int64, messageID int, caption string) EditMessageCaptionConfig {
 	return EditMessageCaptionConfig{
 		BaseEdit: BaseEdit{
-			ChatID:    chatID,
-			MessageID: messageID,
+			BaseChatMessage: BaseChatMessage{
+				ChatConfig: ChatConfig{
+					ChatID: chatID,
+				},
+				MessageID: messageID,
+			},
 		},
 		Caption: caption,
 	}
@@ -604,8 +750,12 @@ func NewEditMessageCaption(chatID int64, messageID int, caption string) EditMess
 func NewEditMessageReplyMarkup(chatID int64, messageID int, replyMarkup InlineKeyboardMarkup) EditMessageReplyMarkupConfig {
 	return EditMessageReplyMarkupConfig{
 		BaseEdit: BaseEdit{
-			ChatID:      chatID,
-			MessageID:   messageID,
+			BaseChatMessage: BaseChatMessage{
+				ChatConfig: ChatConfig{
+					ChatID: chatID,
+				},
+				MessageID: messageID,
+			},
 			ReplyMarkup: &replyMarkup,
 		},
 	}
@@ -700,6 +850,15 @@ func NewInlineKeyboardButtonWebApp(text string, webapp WebAppInfo) InlineKeyboar
 	}
 }
 
+// NewInlineKeyboardButtonSwitchInlineQueryChoosenChat creates an inline keyboard button with text
+// which goes to a SwitchInlineQueryChosenChat.
+func NewInlineKeyboardButtonSwitchInlineQueryChoosenChat(text string, switchInlineQueryChosenChat SwitchInlineQueryChosenChat) InlineKeyboardButton {
+	return InlineKeyboardButton{
+		Text:                        text,
+		SwitchInlineQueryChosenChat: &switchInlineQueryChosenChat,
+	}
+}
+
 // NewInlineKeyboardButtonLoginURL creates an inline keyboard button with text
 // which goes to a LoginURL.
 func NewInlineKeyboardButtonLoginURL(text string, loginURL LoginURL) InlineKeyboardButton {
@@ -767,31 +926,113 @@ func NewCallbackWithAlert(id, text string) CallbackConfig {
 }
 
 // NewInvoice creates a new Invoice request to the user.
-func NewInvoice(chatID int64, title, description, payload, providerToken, startParameter, currency string, prices []LabeledPrice) InvoiceConfig {
+func NewInvoice(
+	chatID int64,
+	title string,
+	description string,
+	payload string,
+	providerToken string,
+	startParameter string,
+	currency string,
+	prices []LabeledPrice,
+	suggestedTipAmounts []int,
+) InvoiceConfig {
+	var maxTipAmount, n int
+	for n = range suggestedTipAmounts {
+		if maxTipAmount < suggestedTipAmounts[n] {
+			maxTipAmount = suggestedTipAmounts[n]
+		}
+	}
 	return InvoiceConfig{
-		BaseChat:       BaseChat{ChatID: chatID},
-		Title:          title,
-		Description:    description,
-		Payload:        payload,
-		ProviderToken:  providerToken,
-		StartParameter: startParameter,
-		Currency:       currency,
-		Prices:         prices}
+		BaseChat: BaseChat{
+			ChatConfig: ChatConfig{ChatID: chatID},
+		},
+		Title:               title,
+		Description:         description,
+		Payload:             payload,
+		ProviderToken:       providerToken,
+		StartParameter:      startParameter,
+		Currency:            currency,
+		Prices:              prices,
+		SuggestedTipAmounts: suggestedTipAmounts,
+		MaxTipAmount:        maxTipAmount,
+	}
+}
+
+// NewInvoiceLink creates a new createInvoiceLink request.
+func NewInvoiceLink(ico InvoiceConfig) InvoiceLinkConfig {
+	return InvoiceLinkConfig{
+		Title:               ico.Title,
+		Description:         ico.Description,
+		Payload:             ico.Payload,
+		ProviderToken:       ico.ProviderToken,
+		Currency:            ico.Currency,
+		Prices:              ico.Prices,
+		SuggestedTipAmounts: ico.SuggestedTipAmounts,
+		MaxTipAmount:        ico.MaxTipAmount,
+	}
 }
 
 // NewChatTitle allows you to update the title of a chat.
 func NewChatTitle(chatID int64, title string) SetChatTitleConfig {
 	return SetChatTitleConfig{
-		ChatID: chatID,
-		Title:  title,
+		ChatConfig: ChatConfig{
+			ChatID: chatID,
+		},
+		Title: title,
 	}
 }
 
 // NewChatDescription allows you to update the description of a chat.
 func NewChatDescription(chatID int64, description string) SetChatDescriptionConfig {
 	return SetChatDescriptionConfig{
-		ChatID:      chatID,
+		ChatConfig: ChatConfig{
+			ChatID: chatID,
+		},
 		Description: description,
+	}
+}
+
+func NewPinChatMessage(chatID int64, messageID int, disableNotification bool) PinChatMessageConfig {
+	return PinChatMessageConfig{
+		BaseChatMessage: BaseChatMessage{
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
+			MessageID: messageID,
+		},
+		DisableNotification: disableNotification,
+	}
+}
+
+func NewUnpinChatMessage(chatID int64, messageID int) UnpinChatMessageConfig {
+	return UnpinChatMessageConfig{
+		BaseChatMessage: BaseChatMessage{
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
+			MessageID: messageID,
+		},
+	}
+}
+
+func NewGetChatMember(chatID, userID int64) GetChatMemberConfig {
+	return GetChatMemberConfig{
+		ChatConfigWithUser: ChatConfigWithUser{
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
+			UserID: userID,
+		},
+	}
+}
+
+func NewChatMember(chatID, userID int64) ChatMemberConfig {
+	return ChatMemberConfig{
+		ChatConfig: ChatConfig{
+			ChatID: chatID,
+		},
+		UserID: userID,
 	}
 }
 
@@ -800,7 +1041,7 @@ func NewChatPhoto(chatID int64, photo RequestFileData) SetChatPhotoConfig {
 	return SetChatPhotoConfig{
 		BaseFile: BaseFile{
 			BaseChat: BaseChat{
-				ChatID: chatID,
+				ChatConfig: ChatConfig{ChatID: chatID},
 			},
 			File: photo,
 		},
@@ -810,15 +1051,17 @@ func NewChatPhoto(chatID int64, photo RequestFileData) SetChatPhotoConfig {
 // NewDeleteChatPhoto allows you to delete the photo for a chat.
 func NewDeleteChatPhoto(chatID int64) DeleteChatPhotoConfig {
 	return DeleteChatPhotoConfig{
-		ChatID: chatID,
+		ChatConfig: ChatConfig{
+			ChatID: chatID,
+		},
 	}
 }
 
 // NewPoll allows you to create a new poll.
-func NewPoll(chatID int64, question string, options ...string) SendPollConfig {
+func NewPoll(chatID int64, question string, options ...InputPollOption) SendPollConfig {
 	return SendPollConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
 		Question:    question,
 		Options:     options,
@@ -826,12 +1069,23 @@ func NewPoll(chatID int64, question string, options ...string) SendPollConfig {
 	}
 }
 
+// NewPollOption allows you to create poll option
+func NewPollOption(text string) InputPollOption {
+	return InputPollOption{
+		Text: text,
+	}
+}
+
 // NewStopPoll allows you to stop a poll.
 func NewStopPoll(chatID int64, messageID int) StopPollConfig {
 	return StopPollConfig{
 		BaseEdit{
-			ChatID:    chatID,
-			MessageID: messageID,
+			BaseChatMessage: BaseChatMessage{
+				ChatConfig: ChatConfig{
+					ChatID: chatID,
+				},
+				MessageID: messageID,
+			},
 		},
 	}
 }
@@ -840,7 +1094,7 @@ func NewStopPoll(chatID int64, messageID int) StopPollConfig {
 func NewDice(chatID int64) DiceConfig {
 	return DiceConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
 	}
 }
@@ -851,9 +1105,23 @@ func NewDice(chatID int64) DiceConfig {
 func NewDiceWithEmoji(chatID int64, emoji string) DiceConfig {
 	return DiceConfig{
 		BaseChat: BaseChat{
-			ChatID: chatID,
+			ChatConfig: ChatConfig{ChatID: chatID},
 		},
 		Emoji: emoji,
+	}
+}
+
+// NewSetMessageReaction allows you to set a message's reactions.
+func NewSetMessageReaction(chatID int64, messageID int, reaction []ReactionType, isBig bool) SetMessageReactionConfig {
+	return SetMessageReactionConfig{
+		BaseChatMessage: BaseChatMessage{
+			ChatConfig: ChatConfig{
+				ChatID: chatID,
+			},
+			MessageID: messageID,
+		},
+		Reaction: reaction,
+		IsBig:    isBig,
 	}
 }
 
@@ -905,6 +1173,58 @@ func NewBotCommandScopeChatMember(chatID, userID int64) BotCommandScope {
 		Type:   "chat_member",
 		ChatID: chatID,
 		UserID: userID,
+	}
+}
+
+// NewSetMyDescription allows you to change the bot's description, which is shown in the chat with the bot if the chat is empty.
+func NewSetMyDescription(description, languageCode string) SetMyDescriptionConfig {
+	return SetMyDescriptionConfig{
+		Description:  description,
+		LanguageCode: languageCode,
+	}
+}
+
+// NewGetMyDescription returns the current bot description for the given user language
+func NewGetMyDescription(languageCode string) GetMyDescriptionConfig {
+	return GetMyDescriptionConfig{
+		LanguageCode: languageCode,
+	}
+}
+
+// NewSetMyShortDescription allows you change the bot's short description, which is shown on the bot's profile page and is sent together with the link when users share the bot.
+func NewSetMyShortDescription(shortDescription, languageCode string) SetMyShortDescriptionConfig {
+	return SetMyShortDescriptionConfig{
+		ShortDescription: shortDescription,
+		LanguageCode:     languageCode,
+	}
+}
+
+// NewGetMyShortDescription returns the current bot short description for the given user language.
+func NewGetMyShortDescription(languageCode string) GetMyShortDescriptionConfig {
+	return GetMyShortDescriptionConfig{
+		LanguageCode: languageCode,
+	}
+}
+
+// NewGetMyName get the current bot name for the given user language
+func NewGetMyName(languageCode string) GetMyNameConfig {
+	return GetMyNameConfig{
+		LanguageCode: languageCode,
+	}
+}
+
+// NewSetMyName change the bot's name
+func NewSetMyName(languageCode, name string) SetMyNameConfig {
+	return SetMyNameConfig{
+		Name:         name,
+		LanguageCode: languageCode,
+	}
+}
+
+// NewGetBusinessConnection gets business connection request struct
+func NewGetBusinessConnection(id string) GetBusinessConnectionConfig {
+	return GetBusinessConnectionConfig{
+		BusinessConnectionID: BusinessConnectionID(id),
 	}
 }
 
@@ -986,4 +1306,54 @@ func ValidateWebAppData(token, telegramInitData string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// NewPaidMedia creates a new PaidMediaConfig.
+// chatID is where to send it, starCount is the number of stars to charge,
+// and media is the InputPaidMedia to send.
+func NewPaidMedia(chatID, starCount int64, media *InputPaidMedia) PaidMediaConfig {
+	return PaidMediaConfig{
+		BaseChat: BaseChat{
+			ChatConfig: ChatConfig{ChatID: chatID},
+		},
+		StarCount: starCount,
+		Media:     media,
+	}
+}
+
+// NewInputPaidMediaPhoto creates a new InputPaidMedia for photos.
+func NewInputPaidMediaPhoto(media *InputMediaPhoto) InputPaidMedia {
+	return InputPaidMedia{
+		Type:  "photo",
+		Media: media,
+	}
+}
+
+// NewInputPaidMediaVideo creates a new InputPaidMedia for videos.
+func NewInputPaidMediaVideo(media *InputMediaVideo) InputPaidMedia {
+	return InputPaidMedia{
+		Type:  "video",
+		Media: media,
+	}
+}
+
+// NewCreateForumTopicConfig creates a topic in a forum supergroup chat.
+func NewCreateForumTopicConfig(chatID int64, topicName string) CreateForumTopicConfig {
+	return CreateForumTopicConfig{
+		ChatConfig: ChatConfig{
+			ChatID: chatID,
+		},
+		Name: topicName,
+	}
+}
+
+// NewEditForumTopicConfig edit name and icon of a topic in a forum supergroup chat.
+func NewEditForumTopicConfig(chatID, threadID int64, topicName string) EditForumTopicConfig {
+	return EditForumTopicConfig{
+		BaseForum: BaseForum{
+			ChatConfig:      ChatConfig{ChatID: chatID},
+			MessageThreadID: int(threadID),
+		},
+		Name: topicName,
+	}
 }
