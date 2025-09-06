@@ -25,6 +25,8 @@ output:
 linters:
   default: all
   disable:
+    # err113 is really annoying to fix without proper error typing project-wide
+    - err113
     - gochecknoglobals
     - lll
     - prealloc
