@@ -1,8 +1,7 @@
 package bmumble
 
 import (
-	"fmt"
-
+	"errors"
 	"layeh.com/gumble/gumble"
 )
 

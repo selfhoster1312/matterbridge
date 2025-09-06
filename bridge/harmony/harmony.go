@@ -159,11 +159,12 @@ func (b *Bharmony) GetUint64(conf string) uint64 {
 }
 
 func (b *Bharmony) Connect() error {
-	b.c, err = shibshib.NewClient(b.GetString("Homeserver"), b.GetString("Token"), b.GetUint64("UserID"))
+	c, err := shibshib.NewClient(b.GetString("Homeserver"), b.GetString("Token"), b.GetUint64("UserID"))
 	if err != nil {
 		return err
 	}
 
+	b.c = c
 	b.c.SubscribeToGuild(b.GetUint64("Community"))
 
 	go b.outputMessages()

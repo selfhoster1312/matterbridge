@@ -2,7 +2,6 @@ package bmsteams
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"regexp"
 	"strings"

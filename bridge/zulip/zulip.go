@@ -2,7 +2,6 @@ package bzulip
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"strconv"
 	"strings"

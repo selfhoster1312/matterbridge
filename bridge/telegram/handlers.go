@@ -1,7 +1,6 @@
 package btelegram
 
 import (
-	"fmt"
 	"html"
 	"path/filepath"
 	"strconv"
