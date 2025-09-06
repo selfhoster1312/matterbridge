@@ -119,10 +119,7 @@ func (gw *Gateway) AddConfig(cfg *config.Gateway) error {
 	gw.Name = cfg.Name
 
 	gw.MyConfig = cfg
-	err := gw.mapChannels()
-	if err != nil {
-		gw.logger.Errorf("mapChannels() failed: %s", err)
-	}
+	gw.mapChannels()
 
 	for _, br := range append(gw.MyConfig.In, append(gw.MyConfig.InOut, gw.MyConfig.Out...)...) {
 		// scopelint
@@ -321,12 +318,10 @@ func (gw *Gateway) mapChannelConfig(cfg []config.Bridge, direction string) {
 	}
 }
 
-func (gw *Gateway) mapChannels() error {
+func (gw *Gateway) mapChannels() {
 	gw.mapChannelConfig(gw.MyConfig.In, "in")
 	gw.mapChannelConfig(gw.MyConfig.Out, "out")
 	gw.mapChannelConfig(gw.MyConfig.InOut, "inout")
-
-	return nil
 }
 
 func (gw *Gateway) getDestChannel(msg *config.Message, dest bridge.Bridge) []config.ChannelInfo {
