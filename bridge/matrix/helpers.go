@@ -138,7 +138,8 @@ func handleError(err error) *httpError {
 
 	var httpErr httpError
 
-	if err := json.Unmarshal(mErr.Contents, &httpErr); err != nil {
+	err = json.Unmarshal(mErr.Contents, &httpErr)
+	if err != nil {
 		return &httpError{
 			Err: "unmarshal failed",
 		}

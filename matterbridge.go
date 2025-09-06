@@ -66,7 +66,8 @@ func main() {
 		logger.Fatalf("Starting gateway failed: %s", err)
 	}
 
-	if err = r.Start(); err != nil {
+	err = r.Start()
+	if err != nil {
 		logger.Fatalf("Starting gateway failed: %s", err)
 	}
 

@@ -34,7 +34,8 @@ func (b *Bsshchat) Connect() error {
 		b.r.Scan()
 
 		b.w = w
-		if _, err := b.w.Write([]byte("/theme mono\r\n/quiet\r\n")); err != nil {
+		_, err := b.w.Write([]byte("/theme mono\r\n/quiet\r\n"))
+		if err != nil {
 			return err
 		}
 
@@ -80,7 +81,8 @@ func (b *Bsshchat) Send(msg config.Message) (string, error) {
 
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-			if _, err := b.w.Write([]byte(rmsg.Username + rmsg.Text + "\r\n")); err != nil {
+			_, err := b.w.Write([]byte(rmsg.Username + rmsg.Text + "\r\n"))
+			if err != nil {
 				b.Log.Errorf("Could not send extra message: %#v", err)
 			}
 		}
@@ -182,7 +184,8 @@ func (b *Bsshchat) handleUploadFile(msg *config.Message) (string, error) {
 			}
 		}
 
-		if _, err := b.w.Write([]byte(msg.Username + msg.Text + "\r\n")); err != nil {
+		_, err := b.w.Write([]byte(msg.Username + msg.Text + "\r\n"))
+		if err != nil {
 			b.Log.Errorf("Could not send file message: %#v", err)
 		}
 	}

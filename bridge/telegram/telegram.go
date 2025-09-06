@@ -176,7 +176,8 @@ func (b *Btelegram) Send(msg config.Message) (string, error) {
 	// Upload a file if it exists
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-			if _, msgErr := b.sendMessage(chatid, topicid, rmsg.Username, rmsg.Text, parentID); msgErr != nil {
+			_, msgErr := b.sendMessage(chatid, topicid, rmsg.Username, rmsg.Text, parentID)
+			if msgErr != nil {
 				b.Log.Errorf("sendMessage failed: %s", msgErr)
 			}
 		}

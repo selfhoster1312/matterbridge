@@ -55,7 +55,8 @@ func (b *Bkeybase) Disconnect() error {
 
 // JoinChannel sets channel name in struct
 func (b *Bkeybase) JoinChannel(channel config.ChannelInfo) error {
-	if _, err := b.kbc.JoinChannel(b.team, channel.Name); err != nil {
+	_, err := b.kbc.JoinChannel(b.team, channel.Name)
+	if err != nil {
 		return err
 	}
 

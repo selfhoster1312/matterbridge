@@ -210,7 +210,8 @@ func (r *Router) updateChannelMembers() {
 
 				r.logger.Debugf("sending %s to %s", config.EventGetChannelMembers, br.Account)
 
-				if _, err := br.Send(config.Message{Event: config.EventGetChannelMembers}); err != nil {
+				_, err := br.Send(config.Message{Event: config.EventGetChannelMembers})
+				if err != nil {
 					r.logger.Errorf("updateChannelMembers: %s", err)
 				}
 			}

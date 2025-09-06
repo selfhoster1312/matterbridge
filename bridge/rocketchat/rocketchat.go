@@ -117,11 +117,13 @@ func (b *Brocketchat) JoinChannel(channel config.ChannelInfo) error {
 	b.Unlock()
 
 	mychannel := &models.Channel{ID: id, Name: strings.TrimPrefix(channel.Name, "#")}
-	if err := b.c.JoinChannel(id); err != nil {
+	err = b.c.JoinChannel(id)
+	if err != nil {
 		return err
 	}
 
-	if err := b.c.SubscribeToMessageStream(mychannel, b.messageChan); err != nil {
+	err = b.c.SubscribeToMessageStream(mychannel, b.messageChan)
+	if err != nil {
 		return err
 	}
 
@@ -176,7 +178,8 @@ func (b *Brocketchat) Send(msg config.Message) (string, error) {
 					Alias:  rmsg.Username,
 				},
 			}
-			if _, err := b.c.SendMessage(smsg); err != nil {
+			_, err := b.c.SendMessage(smsg)
+			if err != nil {
 				b.Log.Errorf("SendMessage failed: %s", err)
 			}
 		}

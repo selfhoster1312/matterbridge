@@ -380,7 +380,8 @@ func (b *Bslack) updateTopicOrPurpose(msg *config.Message, channelInfo *slack.Ch
 			return nil
 		}
 
-		if err = handleRateLimit(b.Log, err); err != nil {
+		err = handleRateLimit(b.Log, err)
+		if err != nil {
 			return err
 		}
 	}
@@ -421,7 +422,8 @@ func (b *Bslack) deleteMessage(msg *config.Message, channelInfo *slack.Channel) 
 			return true, nil
 		}
 
-		if err = handleRateLimit(b.Log, err); err != nil {
+		err = handleRateLimit(b.Log, err)
+		if err != nil {
 			b.Log.Errorf("Failed to delete user message from Slack: %#v", err)
 			return true, err
 		}
@@ -440,7 +442,8 @@ func (b *Bslack) editMessage(msg *config.Message, channelInfo *slack.Channel) (b
 			return true, nil
 		}
 
-		if err = handleRateLimit(b.Log, err); err != nil {
+		err = handleRateLimit(b.Log, err)
+		if err != nil {
 			b.Log.Errorf("Failed to edit user message on Slack: %#v", err)
 			return true, err
 		}
@@ -460,7 +463,8 @@ func (b *Bslack) postMessage(msg *config.Message, channelInfo *slack.Channel) (s
 			return id, nil
 		}
 
-		if err = handleRateLimit(b.Log, err); err != nil {
+		err = handleRateLimit(b.Log, err)
+		if err != nil {
 			b.Log.Errorf("Failed to sent user message to Slack: %#v", err)
 			return "", err
 		}

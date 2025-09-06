@@ -342,7 +342,8 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 		for _, rmsg := range helper.HandleExtra(msg, b.General) {
 			// TODO: Use ClipOrSplitMessage
 			rmsg.Text = helper.ClipMessage(rmsg.Text, MessageLength, b.GetString("MessageClipped"))
-			if _, err := b.c.ChannelMessageSend(channelID, rmsg.Username+rmsg.Text); err != nil {
+			_, err := b.c.ChannelMessageSend(channelID, rmsg.Username+rmsg.Text)
+			if err != nil {
 				b.Log.Errorf("Could not send message %#v: %s", rmsg, err)
 			}
 		}
