@@ -198,7 +198,10 @@ func (b *API) handleMessages(c echo.Context) error {
 	b.Lock()
 	defer b.Unlock()
 
-	c.JSONPretty(http.StatusOK, b.Messages.Values(), " ")
+	err := c.JSONPretty(http.StatusOK, b.Messages.Values(), " ")
+	if err != nil {
+		return err
+	}
 	b.Messages = ring.Ring{}
 
 	return nil

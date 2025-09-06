@@ -123,7 +123,9 @@ func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	decoder := schema.NewDecoder()
 
@@ -175,10 +177,15 @@ func (c *Client) Send(msg OMessage) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Read entire body to completion to re-use keep-alive connections.
-	io.Copy(io.Discard, resp.Body)
+	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return err
+	}
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("unexpected status code: %d", resp.StatusCode)

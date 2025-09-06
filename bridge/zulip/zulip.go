@@ -43,7 +43,9 @@ func (b *Bzulip) Connect() error {
 	b.getChannel(0)
 	b.Log.Info("Connection succeeded")
 
-	go b.handleQueue()
+	go func() {
+		_ = b.handleQueue()
+	}()
 
 	return nil
 }
@@ -73,7 +75,10 @@ func (b *Bzulip) Send(msg config.Message) (string, error) {
 	// Upload a file if it exists
 	if msg.Extra != nil {
 		for _, rmsg := range helper.HandleExtra(&msg, b.General) {
-			b.sendMessage(rmsg)
+			_, err := b.sendMessage(rmsg)
+			if err != nil {
+				return "", err
+			}
 		}
 
 		if len(msg.Extra["file"]) > 0 {
@@ -197,7 +202,9 @@ func (b *Bzulip) sendMessage(msg config.Message) (string, error) {
 	}
 
 	if resp != nil {
-		defer resp.Body.Close()
+		defer func() {
+			_ = resp.Body.Close()
+		}()
 
 		res, err := io.ReadAll(resp.Body)
 		if err != nil {

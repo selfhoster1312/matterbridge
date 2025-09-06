@@ -99,7 +99,9 @@ func (b *Bmsteams) handleCodeSnippet(rmsg *config.Message, attach msgraph.ChatMe
 		b.Log.Errorf("retrieving snippet content failed:%s", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	res, err := io.ReadAll(resp.Body)
 	if err != nil {

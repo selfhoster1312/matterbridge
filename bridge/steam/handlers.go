@@ -94,14 +94,20 @@ func (b *Bsteam) handleLogOnFailed(e *steam.LogOnFailedEvent, myLoginInfo *steam
 		b.Log.Info("Steam guard isn't letting me in! Enter 2FA code:")
 
 		var code string
-		fmt.Scanf("%s", &code)
+		_, err := fmt.Scanf("%s", &code)
+		if err != nil {
+			return err
+		}
 		// TODO https://github.com/42wim/matterbridge/pull/630#discussion_r238103978
 		myLoginInfo.TwoFactorCode = code
 	case steamlang.EResult_AccountLogonDenied:
 		b.Log.Info("Steam guard isn't letting me in! Enter auth code:")
 
 		var code string
-		fmt.Scanf("%s", &code)
+		_, err := fmt.Scanf("%s", &code)
+		if err != nil {
+			return err
+		}
 		// TODO https://github.com/42wim/matterbridge/pull/630#discussion_r238103978
 		myLoginInfo.AuthCode = code
 	case steamlang.EResult_InvalidLoginAuthCode:

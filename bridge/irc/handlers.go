@@ -33,8 +33,14 @@ func (b *Birc) handleCharset(msg *config.Message) error {
 				return err
 			}
 
-			fmt.Fprint(w, msg.Text)
-			w.Close()
+			_, err = fmt.Fprint(w, msg.Text)
+			if err != nil {
+				return err
+			}
+			err = w.Close()
+			if err != nil {
+				return err
+			}
 
 			msg.Text = buf.String()
 		}
