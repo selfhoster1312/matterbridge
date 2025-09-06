@@ -113,7 +113,7 @@ func (b *Bvk) Send(msg config.Message) (string, error) {
 
 		res, e := b.c.MessagesSendPeerIDs(params)
 		if e != nil {
-			return "", err
+			return "", e
 		}
 
 		return strconv.Itoa(res[0].ConversationMessageID), nil
