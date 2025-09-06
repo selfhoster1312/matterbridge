@@ -20,11 +20,11 @@ type Brocketchat struct {
 	sync.RWMutex
 	*bridge.Config
 
-	mh    *matterhook.Client
-	rh    *rockethook.Client
-	c     *realtime.Client
-	r     *rest.Client
-	cache *lru.Cache
+	mh          *matterhook.Client
+	rh          *rockethook.Client
+	c           *realtime.Client
+	r           *rest.Client
+	cache       *lru.Cache
 	messageChan chan models.Message
 	channelMap  map[string]string
 	user        *models.User

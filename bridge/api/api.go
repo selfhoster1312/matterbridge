@@ -23,7 +23,7 @@ type API struct {
 	*bridge.Config
 
 	Messages ring.Ring
-	mrouter *melody.Melody
+	mrouter  *melody.Melody
 }
 
 type Message struct {

@@ -253,7 +253,7 @@ func (b *Bslack) handleMessageEvent(ev *slack.MessageEvent) (*config.Message, er
 func (b *Bslack) handleFileDeletedEvent(ev *slack.FileDeletedEvent) (*config.Message, error) {
 	if rawChannel, ok := b.cache.Get(cfileDownloadChannel + ev.FileID); ok {
 		rawChannel2, _ := rawChannel.(string)
-		
+
 		channel, err := b.channels.getChannelByID(rawChannel2)
 		if err != nil {
 			return nil, err

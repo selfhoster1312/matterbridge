@@ -23,10 +23,10 @@ type Bxmpp struct {
 	*bridge.Config
 	sync.RWMutex
 
-	startTime time.Time
-	xc        *xmpp.Client
-	xmppMap   map[string]string
-	connected bool
+	startTime          time.Time
+	xc                 *xmpp.Client
+	xmppMap            map[string]string
+	connected          bool
 	avatarAvailability map[string]bool
 	avatarMap          map[string]string
 }
