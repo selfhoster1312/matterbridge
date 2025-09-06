@@ -94,6 +94,7 @@ func (b *Bsteam) handleLogOnFailed(e *steam.LogOnFailedEvent, myLoginInfo *steam
 		b.Log.Info("Steam guard isn't letting me in! Enter 2FA code:")
 
 		var code string
+
 		_, err := fmt.Scanf("%s", &code)
 		if err != nil {
 			return err
@@ -104,6 +105,7 @@ func (b *Bsteam) handleLogOnFailed(e *steam.LogOnFailedEvent, myLoginInfo *steam
 		b.Log.Info("Steam guard isn't letting me in! Enter auth code:")
 
 		var code string
+
 		_, err := fmt.Scanf("%s", &code)
 		if err != nil {
 			return err

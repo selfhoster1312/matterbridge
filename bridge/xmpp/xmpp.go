@@ -42,8 +42,8 @@ func New(cfg *bridge.Config) bridge.Bridger {
 
 func (b *Bxmpp) Connect() error {
 	b.Log.Infof("Connecting %s", b.GetString("Server"))
-	err := b.createXMPP()
 
+	err := b.createXMPP()
 	if err != nil {
 		b.Log.Debugf("%#v", err)
 		return err
@@ -63,6 +63,7 @@ func (b *Bxmpp) Disconnect() error {
 func (b *Bxmpp) JoinChannel(channel config.ChannelInfo) error {
 	if channel.Options.Key != "" {
 		b.Log.Debugf("using key %s for channel %s", channel.Options.Key, channel.Name)
+
 		_, err := b.xc.JoinProtectedMUC(channel.Name+"@"+b.GetString("Muc"), b.GetString("Nick"), channel.Options.Key, xmpp.NoHistory, 0, nil)
 		if err != nil {
 			return err
@@ -282,8 +283,8 @@ func (b *Bxmpp) manageConnection() {
 			time.Sleep(d)
 
 			b.Log.Infof("Reconnecting now.")
-			err := b.createXMPP()
 
+			err := b.createXMPP()
 			if err == nil {
 				b.setConnected(true)
 				bf.Reset()
@@ -307,8 +308,8 @@ func (b *Bxmpp) xmppKeepAlive() chan bool {
 			select {
 			case <-ticker.C:
 				b.Log.Debugf("PING")
-				err := b.xc.PingC2S("", "")
 
+				err := b.xc.PingC2S("", "")
 				if err != nil {
 					b.Log.Debugf("PING failed %#v", err)
 				}

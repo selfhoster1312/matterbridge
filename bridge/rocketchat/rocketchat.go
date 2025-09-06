@@ -117,6 +117,7 @@ func (b *Brocketchat) JoinChannel(channel config.ChannelInfo) error {
 	b.Unlock()
 
 	mychannel := &models.Channel{ID: id, Name: strings.TrimPrefix(channel.Name, "#")}
+
 	err = b.c.JoinChannel(id)
 	if err != nil {
 		return err
@@ -178,6 +179,7 @@ func (b *Brocketchat) Send(msg config.Message) (string, error) {
 					Alias:  rmsg.Username,
 				},
 			}
+
 			_, err := b.c.SendMessage(smsg)
 			if err != nil {
 				b.Log.Errorf("SendMessage failed: %s", err)

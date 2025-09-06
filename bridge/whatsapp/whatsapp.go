@@ -238,6 +238,7 @@ func (b *Bwhatsapp) PostDocumentMessage(msg config.Message, filetype string) (st
 	// create message ID
 	// TODO follow and act if https://github.com/Rhymen/go-whatsapp/issues/101 implemented
 	idBytes := make([]byte, 10)
+
 	_, err := rand.Read(idBytes)
 	if err != nil {
 		b.Log.Warn(err.Error())
@@ -269,6 +270,7 @@ func (b *Bwhatsapp) PostImageMessage(msg config.Message, filetype string) (strin
 	// create message ID
 	// TODO follow and act if https://github.com/Rhymen/go-whatsapp/issues/101 implemented
 	idBytes := make([]byte, 10)
+
 	_, err := rand.Read(idBytes)
 	if err != nil {
 		b.Log.Warn(err.Error())

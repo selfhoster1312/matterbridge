@@ -98,8 +98,8 @@ func (c *Client) StartServer() {
 		Addr:         c.BindAddress,
 	}
 	log.Printf("Listening on http://%v...\n", c.BindAddress)
-	err := srv.ListenAndServe()
 
+	err := srv.ListenAndServe()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -123,6 +123,7 @@ func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
 	defer func() {
 		_ = r.Body.Close()
 	}()
@@ -177,6 +178,7 @@ func (c *Client) Send(msg OMessage) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()

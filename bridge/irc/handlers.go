@@ -37,6 +37,7 @@ func (b *Birc) handleCharset(msg *config.Message) error {
 			if err != nil {
 				return err
 			}
+
 			err = w.Close()
 			if err != nil {
 				return err
@@ -68,6 +69,7 @@ func (b *Birc) handleFiles(msg *config.Message) bool {
 		if !ok {
 			return false
 		}
+
 		if fi.Comment != "" {
 			msg.Text += fi.Comment + " : "
 		}
@@ -300,6 +302,7 @@ func (b *Birc) handlePrivMsg(client *girc.Client, event girc.Event) {
 func (b *Birc) handleRunCommands() {
 	for _, cmd := range b.GetStringSlice("RunCommands") {
 		cmd = strings.ReplaceAll(cmd, "{BOTNICK}", b.Nick)
+
 		err := b.i.Cmd.SendRaw(cmd)
 		if err != nil {
 			b.Log.Errorf("RunCommands %s failed: %s", cmd, err)

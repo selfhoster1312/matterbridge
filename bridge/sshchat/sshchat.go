@@ -34,6 +34,7 @@ func (b *Bsshchat) Connect() error {
 		b.r.Scan()
 
 		b.w = w
+
 		_, err := b.w.Write([]byte("/theme mono\r\n/quiet\r\n"))
 		if err != nil {
 			return err

@@ -60,6 +60,7 @@ func DownloadFileAuth(url string, auth string) (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	data := buf.Bytes()
 
 	return &data, nil
@@ -85,6 +86,7 @@ func DownloadFileAuthRocket(url, token, userID string) (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -329,6 +331,7 @@ func ConvertWebPToPNG(data *[]byte) error {
 	var output []byte
 
 	w := bytes.NewBuffer(output)
+
 	err = png.Encode(w, m)
 	if err != nil {
 		return err

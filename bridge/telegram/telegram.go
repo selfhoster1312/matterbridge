@@ -79,17 +79,21 @@ func TGGetParseMode(b *Btelegram, username string, text string) (string, string)
 	switch msg_format {
 	case HTMLFormat:
 		b.Log.Debug("Using mode HTML")
+
 		parsemode = tgbotapi.ModeHTML
 	case "Markdown":
 		b.Log.Debug("Using mode markdown")
+
 		parsemode = tgbotapi.ModeMarkdown
 	case MarkdownV2:
 		b.Log.Debug("Using mode MarkdownV2")
+
 		parsemode = MarkdownV2
 	}
 
 	if strings.ToLower(msg_format) == HTMLNick {
 		b.Log.Debug("Using mode HTML - nick only")
+
 		textout = username + html.EscapeString(text)
 		parsemode = tgbotapi.ModeHTML
 	}

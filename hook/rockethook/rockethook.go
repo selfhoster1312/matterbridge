@@ -59,8 +59,8 @@ func (c *Client) StartServer() {
 	mux := http.NewServeMux()
 	mux.Handle("/", c)
 	log.Printf("Listening on http://%v...\n", c.BindAddress)
-	err := http.ListenAndServe(c.BindAddress, mux)
 
+	err := http.ListenAndServe(c.BindAddress, mux)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -84,6 +84,7 @@ func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
 	defer func() {
 		_ = r.Body.Close()
 	}()

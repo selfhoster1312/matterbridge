@@ -143,6 +143,7 @@ func (b *API) handleHealthcheck(c echo.Context) error {
 
 func (b *API) handlePostMessage(c echo.Context) error {
 	message := config.Message{}
+
 	err := c.Bind(&message)
 	if err != nil {
 		return err
@@ -202,6 +203,7 @@ func (b *API) handleMessages(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+
 	b.Messages = ring.Ring{}
 
 	return nil
@@ -219,6 +221,7 @@ func (b *API) handleStream(c echo.Context) error {
 	c.Response().WriteHeader(http.StatusOK)
 
 	greet := b.getGreeting()
+
 	err := json.NewEncoder(c.Response()).Encode(greet)
 	if err != nil {
 		return err

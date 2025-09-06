@@ -347,8 +347,8 @@ func (b *Bslack) handleAttachments(ev *slack.MessageEvent, rmsg *config.Message)
 	for i := range ev.Files {
 		// keep reference in cache on which channel we added this file
 		b.cache.Add(cfileDownloadChannel+ev.Files[i].ID, ev.Channel)
-		err := b.handleDownloadFile(rmsg, &ev.Files[i], false)
 
+		err := b.handleDownloadFile(rmsg, &ev.Files[i], false)
 		if err != nil {
 			b.Log.Errorf("Could not download incoming file: %#v", err)
 		}
@@ -447,6 +447,7 @@ func (b *Bslack) fileCached(file *slack.File) bool {
 			return true
 		}
 	}
+
 	ts, ok = b.cache.Get("filename" + file.Name)
 	if ok {
 		t, _ := ts.(time.Time)
