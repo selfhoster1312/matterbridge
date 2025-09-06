@@ -408,7 +408,7 @@ func (b *Bdiscord) handleEventBotUser(msg *config.Message, channelID string) (st
 // handleUploadFile handles native upload of files
 func (b *Bdiscord) handleUploadFile(msg *config.Message, channelID string) (string, error) {
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		file := discordgo.File{
 			Name:        fi.Name,
 			ContentType: "",

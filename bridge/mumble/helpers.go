@@ -105,7 +105,10 @@ func (b *Bmumble) extractFiles(msg *config.Message) []config.Message {
 	}
 	// Create a separate message for each file
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, ok := f.(config.FileInfo)
+		if !ok {
+			return []config.Message{}
+		}
 		imsg := config.Message{
 			Channel:   msg.Channel,
 			Username:  msg.Username,

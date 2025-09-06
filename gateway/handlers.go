@@ -41,7 +41,7 @@ func (r *Router) handleEventGetChannelMembers(msg *config.Message) {
 	for _, gw := range r.Gateways {
 		for _, br := range gw.Bridges {
 			if msg.Account == br.Account {
-				cMembers := msg.Extra[config.EventGetChannelMembers][0].(config.ChannelMembers)
+				cMembers, _ := msg.Extra[config.EventGetChannelMembers][0].(config.ChannelMembers)
 				r.logger.Debugf("Syncing channelmembers from %s", msg.Account)
 				br.SetChannelMembers(&cMembers)
 
@@ -88,7 +88,7 @@ func (gw *Gateway) handleFiles(msg *config.Message) {
 	}
 
 	for i, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		ext := filepath.Ext(fi.Name)
 		fi.Name = fi.Name[0 : len(fi.Name)-len(ext)]
 		fi.Name = reg.ReplaceAllString(fi.Name, "_")
@@ -118,7 +118,7 @@ func (gw *Gateway) handleFiles(msg *config.Message) {
 		gw.logger.Debugf("mediaserver download URL = %s", durl)
 
 		// We uploaded/placed the file successfully. Add the SHA and URL.
-		extra := msg.Extra["file"][i].(config.FileInfo)
+		extra, _ := msg.Extra["file"][i].(config.FileInfo)
 		extra.URL = durl
 		extra.SHA = sha1sum
 		msg.Extra["file"][i] = extra

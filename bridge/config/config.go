@@ -391,8 +391,10 @@ func (c *config) GetStringSlice2D(key string) ([][]string, bool) {
 	var result [][]string
 	for _, entry := range res {
 		result2 := []string{}
-		for _, entry2 := range entry.([]interface{}) {
-			result2 = append(result2, entry2.(string))
+		entry_cast, _ := entry.([]interface{})
+		for _, entry2 := range entry_cast {
+			entry2_cast, _ := entry2.(string)
+			result2 = append(result2, entry2_cast)
 		}
 
 		result = append(result, result2)
@@ -426,7 +428,8 @@ func (c *TestConfig) IsKeySet(key string) bool {
 func (c *TestConfig) GetBool(key string) (bool, bool) {
 	val, ok := c.Overrides[key]
 	if ok {
-		return val.(bool), true
+		val2, _ := val.(bool)
+		return val2, true
 	}
 
 	return c.Config.GetBool(key)
@@ -434,7 +437,8 @@ func (c *TestConfig) GetBool(key string) (bool, bool) {
 
 func (c *TestConfig) GetInt(key string) (int, bool) {
 	if val, ok := c.Overrides[key]; ok {
-		return val.(int), true
+		val2, _ := val.(int)
+		return val2, true
 	}
 
 	return c.Config.GetInt(key)
@@ -442,7 +446,8 @@ func (c *TestConfig) GetInt(key string) (int, bool) {
 
 func (c *TestConfig) GetString(key string) (string, bool) {
 	if val, ok := c.Overrides[key]; ok {
-		return val.(string), true
+		val2, _ := val.(string)
+		return val2, true
 	}
 
 	return c.Config.GetString(key)
@@ -450,7 +455,8 @@ func (c *TestConfig) GetString(key string) (string, bool) {
 
 func (c *TestConfig) GetStringSlice(key string) ([]string, bool) {
 	if val, ok := c.Overrides[key]; ok {
-		return val.([]string), true
+		val2, _ := val.([]string)
+		return val2, true
 	}
 
 	return c.Config.GetStringSlice(key)
@@ -458,7 +464,8 @@ func (c *TestConfig) GetStringSlice(key string) ([]string, bool) {
 
 func (c *TestConfig) GetStringSlice2D(key string) ([][]string, bool) {
 	if val, ok := c.Overrides[key]; ok {
-		return val.([][]string), true
+		val2, _ := val.([][]string)
+		return val2, true
 	}
 
 	return c.Config.GetStringSlice2D(key)

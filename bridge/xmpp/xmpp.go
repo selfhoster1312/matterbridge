@@ -409,7 +409,7 @@ func (b *Bxmpp) handleUploadFile(msg *config.Message) error {
 	var urlDesc string
 
 	for _, file := range msg.Extra["file"] {
-		fileInfo := file.(config.FileInfo)
+		fileInfo, _ := file.(config.FileInfo)
 		if fileInfo.Comment != "" {
 			msg.Text += fileInfo.Comment + ": "
 		}

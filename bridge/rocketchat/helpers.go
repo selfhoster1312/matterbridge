@@ -210,7 +210,7 @@ func (b *Brocketchat) sendWebhook(msg *config.Message) error {
 		// webhook doesn't support file uploads, so we add the url manually
 		if len(msg.Extra["file"]) > 0 {
 			for _, f := range msg.Extra["file"] {
-				fi := f.(config.FileInfo)
+				fi, _ := f.(config.FileInfo)
 				if fi.URL != "" {
 					msg.Text += fi.URL
 				}

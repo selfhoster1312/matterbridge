@@ -193,7 +193,7 @@ func (b *Bmattermost) handleUploadFile(msg *config.Message) (string, error) {
 
 	channelID := b.getChannelID(msg.Channel)
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 
 		id, err = b.mc.UploadFile(*fi.Data, channelID, fi.Name)
 		if err != nil {

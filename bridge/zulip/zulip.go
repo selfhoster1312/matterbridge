@@ -228,7 +228,7 @@ func (b *Bzulip) sendMessage(msg config.Message) (string, error) {
 
 func (b *Bzulip) handleUploadFile(msg *config.Message) (string, error) {
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		if fi.Comment != "" {
 			msg.Text += fi.Comment + ": "
 		}

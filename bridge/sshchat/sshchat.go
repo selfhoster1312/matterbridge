@@ -170,7 +170,7 @@ func (b *Bsshchat) handleSSHChat() error {
 
 func (b *Bsshchat) handleUploadFile(msg *config.Message) (string, error) {
 	for _, f := range msg.Extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 		if fi.Comment != "" {
 			msg.Text += fi.Comment + ": "
 		}

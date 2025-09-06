@@ -402,7 +402,7 @@ func (b *Bmatrix) Send(msg config.Message) (string, error) {
 }
 
 func (b *Bmatrix) handlematrix() {
-	syncer := b.mc.Syncer.(*matrix.DefaultSyncer)
+	syncer, _ := b.mc.Syncer.(*matrix.DefaultSyncer)
 	syncer.OnEventType("m.room.redaction", b.handleEvent)
 	syncer.OnEventType("m.room.message", b.handleEvent)
 	syncer.OnEventType("m.room.member", b.handleMemberChange)
@@ -546,7 +546,8 @@ func (b *Bmatrix) handleEvent(ev *matrix.Event) {
 		}
 
 		// Do we have a /me action
-		if ev.Content["msgtype"].(string) == "m.emote" {
+		msgtype, _ := ev.Content["msgtype"].(string)
+		if msgtype == "m.emote" {
 			rmsg.Event = config.EventUserAction
 		}
 

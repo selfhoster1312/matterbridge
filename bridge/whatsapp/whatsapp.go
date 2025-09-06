@@ -220,7 +220,7 @@ func (b *Bwhatsapp) JoinChannel(channel config.ChannelInfo) error {
 
 // Post a document message from the bridge to WhatsApp
 func (b *Bwhatsapp) PostDocumentMessage(msg config.Message, filetype string) (string, error) {
-	fi := msg.Extra["file"][0].(config.FileInfo)
+	fi, _ := msg.Extra["file"][0].(config.FileInfo)
 
 	// Post document message
 	message := whatsapp.DocumentMessage{
@@ -251,7 +251,7 @@ func (b *Bwhatsapp) PostDocumentMessage(msg config.Message, filetype string) (st
 // Post an image message from the bridge to WhatsApp
 // Handle, for sure image/jpeg, image/png and image/gif MIME types
 func (b *Bwhatsapp) PostImageMessage(msg config.Message, filetype string) (string, error) {
-	fi := msg.Extra["file"][0].(config.FileInfo)
+	fi, _ := msg.Extra["file"][0].(config.FileInfo)
 
 	// Post image message
 	message := whatsapp.ImageMessage{
@@ -310,7 +310,7 @@ func (b *Bwhatsapp) Send(msg config.Message) (string, error) {
 
 	// Handle Upload a file
 	if msg.Extra["file"] != nil {
-		fi := msg.Extra["file"][0].(config.FileInfo)
+		fi, _ := msg.Extra["file"][0].(config.FileInfo)
 		filetype := mime.TypeByExtension(filepath.Ext(fi.Name))
 
 		b.Log.Debugf("Extra file is %#v", filetype)

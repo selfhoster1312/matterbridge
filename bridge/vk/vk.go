@@ -219,7 +219,7 @@ func (b *Bvk) uploadFiles(extra map[string][]interface{}, peerID int) (string, s
 	text := ""
 
 	for _, f := range extra["file"] {
-		fi := f.(config.FileInfo)
+		fi, _ := f.(config.FileInfo)
 
 		if fi.Comment != "" {
 			text += fi.Comment + "\n"

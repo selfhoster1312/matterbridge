@@ -127,7 +127,7 @@ func (b *Bsteam) handleFileInfo(msg *config.Message, f interface{}) error {
 		return fmt.Errorf("handleFileInfo cast failed %#v", f)
 	}
 
-	fi := f.(config.FileInfo)
+	fi, _ := f.(config.FileInfo)
 	if fi.Comment != "" {
 		msg.Text += fi.Comment + ": "
 	}

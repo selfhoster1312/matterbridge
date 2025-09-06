@@ -90,9 +90,10 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 		}()
 
 		for _, f := range msg.Extra["file"] {
-			fname := f.(config.FileInfo).Name
-			fdata := *f.(config.FileInfo).Data
-			fcaption := f.(config.FileInfo).Comment
+			fcast, _ := f.(config.FileInfo)
+			fname := fcast.Name
+			fdata := *fcast.Data
+			fcaption := fcast.Comment
 			fpath := filepath.Join(dir, fname)
 
 			err = os.WriteFile(fpath, fdata, 0600)

@@ -75,10 +75,11 @@ func (gw *Gateway) FindCanonicalMsgID(protocol string, mID string) string {
 	for _, mid := range gw.Messages.Keys() {
 		v, _ := gw.Messages.Peek(mid)
 
-		ids := v.([]*BrMsgID)
+		ids, _ := v.([]*BrMsgID)
 		for _, downstreamMsgObj := range ids {
 			if ID == downstreamMsgObj.ID {
-				return mid.(string)
+				mid2, _ := mid.(string)
+				return mid2
 			}
 		}
 	}
@@ -290,7 +291,7 @@ func (gw *Gateway) getDestChannel(msg *config.Message, dest bridge.Bridge) []con
 
 func (gw *Gateway) getDestMsgID(msgID string, dest *bridge.Bridge, channel *config.ChannelInfo) string {
 	if res, ok := gw.Messages.Get(msgID); ok {
-		IDs := res.([]*BrMsgID)
+		IDs, _ := res.([]*BrMsgID)
 		for _, id := range IDs {
 			// check protocol, bridge name and channelname
 			// for people that reuse the same bridge multiple times. see #342
