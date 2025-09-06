@@ -56,6 +56,7 @@ func New(rootLogger *logrus.Logger, cfg *config.Gateway, r *Router) *Gateway {
 		Messages: cache,
 		logger:   logger,
 	}
+
 	err := gw.AddConfig(cfg)
 	if err != nil {
 		logger.Errorf("Failed to add configuration to gateway: %#v", err)
@@ -123,7 +124,6 @@ func (gw *Gateway) AddConfig(cfg *config.Gateway) error {
 
 	for _, br := range append(gw.MyConfig.In, append(gw.MyConfig.InOut, gw.MyConfig.Out...)...) {
 		// scopelint
-
 		err := gw.AddBridge(&br)
 		if err != nil {
 			return err
@@ -271,6 +271,7 @@ RECONNECT:
 	}
 
 	br.Joined = make(map[string]bool)
+
 	err = br.JoinChannels()
 	if err != nil {
 		gw.logger.Errorf("JoinChannels() %s failed: %s", br.Account, err)

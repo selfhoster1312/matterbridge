@@ -61,6 +61,7 @@ func (r *Router) handleEventRejoinChannels(msg *config.Message) {
 		for _, br := range gw.Bridges {
 			if msg.Account == br.Account {
 				br.Joined = make(map[string]bool)
+
 				err := br.JoinChannels()
 				if err != nil {
 					r.logger.Errorf("channel join failed for %s: %s", msg.Account, err)
@@ -148,6 +149,7 @@ func (gw *Gateway) handleFilesUpload(fi *config.FileInfo) error {
 	if err != nil {
 		return fmt.Errorf("mediaserver upload failed, could not Do request: %#v", err)
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()

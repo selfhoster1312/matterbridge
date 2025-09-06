@@ -130,6 +130,7 @@ func (b *Brocketchat) skipMessage(message *models.Message) bool {
 
 func (b *Brocketchat) uploadFile(fi *config.FileInfo, channel string) error {
 	fb := gomf.New()
+
 	err := fb.WriteField("description", fi.Comment)
 	if err != nil {
 		return err
@@ -163,6 +164,7 @@ func (b *Brocketchat) uploadFile(fi *config.FileInfo, channel string) error {
 	if err != nil {
 		return err
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -203,6 +205,7 @@ func (b *Brocketchat) sendWebhook(msg *config.Message) error {
 				Text:     rmsg.Text,
 				Props:    make(map[string]interface{}),
 			}
+
 			err := b.mh.Send(matterMessage)
 			if err != nil {
 				b.Log.Errorf("sendWebhook failed: %s ", err)

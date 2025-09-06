@@ -109,6 +109,7 @@ func (b *Bmumble) extractFiles(msg *config.Message) []config.Message {
 		if !ok {
 			return []config.Message{}
 		}
+
 		imsg := config.Message{
 			Channel:   msg.Channel,
 			Username:  msg.Username,

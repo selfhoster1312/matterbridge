@@ -324,6 +324,7 @@ func newConfigFromString(logger *logrus.Entry, input []byte, cfgtype string) *co
 	}
 
 	cfg := &BridgeValues{}
+
 	err = viper.Unmarshal(cfg)
 	if err != nil {
 		logger.Fatalf("Failed to load the configuration: %s", err)
@@ -391,6 +392,7 @@ func (c *config) GetStringSlice2D(key string) ([][]string, bool) {
 	var result [][]string
 	for _, entry := range res {
 		result2 := []string{}
+
 		entry_cast, _ := entry.([]interface{})
 		for _, entry2 := range entry_cast {
 			entry2_cast, _ := entry2.(string)

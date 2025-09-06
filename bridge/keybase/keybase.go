@@ -86,6 +86,7 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		defer func() {
 			_ = os.RemoveAll(dir)
 		}()

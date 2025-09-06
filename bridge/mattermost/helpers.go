@@ -148,6 +148,7 @@ func (b *Bmattermost) sendWebhook(msg config.Message) (string, error) {
 			}
 
 			matterMessage.Props["matterbridge_"+b.uuid] = true
+
 			err := b.mh.Send(matterMessage)
 			if err != nil {
 				b.Log.Errorf("sendWebhook failed: %s ", err)

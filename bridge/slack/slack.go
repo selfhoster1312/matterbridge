@@ -244,6 +244,7 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 				UserName: rmsg.Username,
 				Text:     rmsg.Text,
 			}
+
 			err := b.mh.Send(matterMessage)
 			if err != nil {
 				b.Log.Errorf("Failed to send message: %v", err)
@@ -283,8 +284,8 @@ func (b *Bslack) sendWebhook(msg config.Message) error {
 	if msg.Avatar != "" {
 		matterMessage.IconURL = msg.Avatar
 	}
-	err := b.mh.Send(matterMessage)
 
+	err := b.mh.Send(matterMessage)
 	if err != nil {
 		b.Log.Errorf("Failed to send message via webhook: %#v", err)
 		return err

@@ -56,6 +56,7 @@ func (b *Bmumble) handleTextMessage(event *gumble.TextMessageEvent) {
 			fname := b.Account + "_" + strconv.FormatInt(now.UnixNano(), 10) + "_" + strconv.Itoa(i) + fileExt
 
 			rmsg.Extra = make(map[string][]interface{})
+
 			err = helper.HandleDownloadSize(b.Log, &rmsg, fname, int64(len(part.Image)), b.General)
 			if err != nil {
 				b.Log.WithError(err).Warn("not including image in message")
