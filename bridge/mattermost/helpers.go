@@ -286,7 +286,9 @@ func (b *Bmattermost) getVersion() string {
 		return ""
 	}
 
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	return resp.Header.Get("X-Version-Id")
 }

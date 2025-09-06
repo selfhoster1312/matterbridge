@@ -85,7 +85,9 @@ func (b *Bkeybase) Send(msg config.Message) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		defer os.RemoveAll(dir)
+		defer func() {
+			_ = os.RemoveAll(dir)
+		}()
 
 		for _, f := range msg.Extra["file"] {
 			fname := f.(config.FileInfo).Name

@@ -84,7 +84,9 @@ func (c *Client) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		_ = r.Body.Close()
+	}()
 
 	err = json.Unmarshal(body, &msg)
 	if err != nil {

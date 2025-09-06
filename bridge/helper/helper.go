@@ -46,14 +46,19 @@ func DownloadFileAuth(url string, auth string) (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		peek, _ := io.ReadAll(resp.Body)
 		return nil, fmt.Errorf("unexpected HTTP status: %s, body: %.100s", resp.Status, peek)
 	}
 
-	io.Copy(&buf, resp.Body)
+	_, err = io.Copy(&buf, resp.Body)
+	if err != nil {
+		return nil, err
+	}
 	data := buf.Bytes()
 
 	return &data, nil
@@ -79,7 +84,9 @@ func DownloadFileAuthRocket(url, token, userID string) (*[]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	_, err = io.Copy(&buf, resp.Body)
 	data := buf.Bytes()

@@ -47,7 +47,9 @@ func (b *Bwhatsapp) readSession() (whatsapp.Session, error) {
 		return session, err
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	decoder := gob.NewDecoder(file)
 
@@ -67,7 +69,9 @@ func (b *Bwhatsapp) writeSession(session whatsapp.Session) error {
 		return err
 	}
 
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	encoder := gob.NewEncoder(file)
 

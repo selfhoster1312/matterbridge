@@ -148,7 +148,9 @@ func (gw *Gateway) handleFilesUpload(fi *config.FileInfo) error {
 	if err != nil {
 		return fmt.Errorf("mediaserver upload failed, could not Do request: %#v", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	return nil
 }
