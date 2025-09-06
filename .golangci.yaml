@@ -26,6 +26,8 @@ linters:
   default: all
   disable:
     # too much refactor, too little value
+    - funlen
+    # too much refactor, too little value
     - gocyclo
     # too much refactor, too little value
     - gocognit
