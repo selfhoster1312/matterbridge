@@ -27,47 +27,51 @@ jobs:
           # Only compare with previous commit when pushing,
           # and with base branch when in PR.
           only-new-issues: true
-  test-build-upload:
+  test:
     strategy:
       matrix:
-        go-version: [1.22.x]
-        platform: [ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
+        # Test on latest release and v1.22
+        go-version: [1.22.x, stable]
+    runs-on: ubuntu-latest
     steps:
-    - name: Install Go
-      uses: actions/setup-go@v6
-      with:
-        go-version: ${{ matrix.go-version }}
-    - name: Checkout code
-      uses: actions/checkout@v5
-      with:
-          fetch-depth: 0
-    - name: go fmt ./...
-      run: test -z "$(go fmt ./...)"
-    - name: Test
-      run: go test ./... -mod=vendor
-    - name: Build
-      run: |
-        mkdir -p output/{win,lin,arm,mac}
-        VERSION=$(git describe --tags --always)
-        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o "output/lin/matterbridge-$VERSION-linux-amd64"
-        CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o "output/win/matterbridge-$VERSION-windows-amd64.exe"
-        CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o "output/mac/matterbridge-$VERSION-darwin-amd64"
-    - name: Upload linux 64-bit
-      if: startsWith(matrix.go-version,'1.22')
-      uses: actions/upload-artifact@v4
-      with:
-        name: matterbridge-linux-64bit
-        path: output/lin
-    - name: Upload windows 64-bit
-      if: startsWith(matrix.go-version,'1.22')
-      uses: actions/upload-artifact@v4
-      with:
-        name: matterbridge-windows-64bit
-        path: output/win
-    - name: Upload darwin 64-bit
-      if: startsWith(matrix.go-version,'1.22')
-      uses: actions/upload-artifact@v4
-      with:
-        name: matterbridge-darwin-64bit
-        path: output/mac
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go-version }}
+      - name: Checkout code
+        uses: actions/checkout@v5
+        with:
+            fetch-depth: 0
+      - name: go fmt ./... (go version ${{ matrix.go-version }})
+        run: test -z "$(go fmt ./...)"
+      - name: go test ./... -mod=vendor (go version ${{ matrix.go-version }})
+        run: go test ./... -mod=vendor
+  build-upload:
+    # Uploading artifacts only if lint/test succeeded
+    needs: [ "lint", "test" ]
+    strategy:
+      matrix:
+        arch: [amd64]
+        platform:
+          - name: linux
+            goos: linux
+          - name: windows
+            goos: windows
+          - name: mac
+            goos: darwin
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: Checkout code
+        uses: actions/checkout@v5
+      - name: Build/upload matterbridge for ${{ matrix.platform.goos }}-${{ matrix.arch }}
+        run: |
+          CGO_ENABLED=0 GOOS=${{ matrix.platform.goos }} GOARCH=${{ matrix.arch }} go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o matterbridge
+      - name: Upload matterbridge-${{ matrix.name }}-${{ matrix.arch }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: matterbridge-${{ matrix.platform.goos }}-${{ matrix.arch }}
+          path: matterbridge
