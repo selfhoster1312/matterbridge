@@ -1,3 +1,9 @@
+> [!NOTE]
+> This is a community-maintained fork [42wim/matterbridge](https://github.com/42wim/matterbridge), because
+> there is not a lot of activity upstream and lots of bugfixes were not merged.
+>
+> **Get involved now and [become a maintainer for your favorite network/protocol](https://github.com/matterbridge-org/community/issues/1)!**
+
 <div align="center">
 
 # matterbridge
