@@ -42,6 +42,8 @@ jobs:
       uses: actions/checkout@v5
       with:
           fetch-depth: 0
+    - name: go fmt ./...
+      run: test -z "$(go fmt ./...)"
     - name: Test
       run: go test ./... -mod=vendor
     - name: Build
