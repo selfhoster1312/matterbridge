@@ -123,6 +123,7 @@ func (b *Bmatrix) cacheDisplayName(mxid string, displayName string) string {
 }
 
 // handleError converts errors into httpError.
+//
 //nolint:exhaustivestruct
 func handleError(err error) *httpError {
 	var mErr matrix.HTTPError

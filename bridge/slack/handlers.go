@@ -189,19 +189,19 @@ func (b *Bslack) filesCached(files []slack.File) bool {
 // handleMessageEvent handles the message events. Together with any called sub-methods,
 // this method implements the following event processing pipeline:
 //
-// 1. Check if the message should be ignored.
-//    NOTE: This is not actually part of the method below but is done just before it
-//          is called via the 'skipMessageEvent()' method.
-// 2. Populate the Matterbridge message that will be sent to the router based on the
-//    received event and logic that is common to all events that are not skipped.
-// 3. Detect and handle any message that is "status" related (think join channel, etc.).
-//    This might result in an early exit from the pipeline and passing of the
-//    pre-populated message to the Matterbridge router.
-// 4. Handle the specific case of messages that edit existing messages depending on
-//    configuration.
-// 5. Handle any attachments of the received event.
-// 6. Check that the Matterbridge message that we end up with after at the end of the
-//    pipeline is valid before sending it to the Matterbridge router.
+//  1. Check if the message should be ignored.
+//     NOTE: This is not actually part of the method below but is done just before it
+//     is called via the 'skipMessageEvent()' method.
+//  2. Populate the Matterbridge message that will be sent to the router based on the
+//     received event and logic that is common to all events that are not skipped.
+//  3. Detect and handle any message that is "status" related (think join channel, etc.).
+//     This might result in an early exit from the pipeline and passing of the
+//     pre-populated message to the Matterbridge router.
+//  4. Handle the specific case of messages that edit existing messages depending on
+//     configuration.
+//  5. Handle any attachments of the received event.
+//  6. Check that the Matterbridge message that we end up with after at the end of the
+//     pipeline is valid before sending it to the Matterbridge router.
 func (b *Bslack) handleMessageEvent(ev *slack.MessageEvent) (*config.Message, error) {
 	rmsg, err := b.populateReceivedMessage(ev)
 	if err != nil {

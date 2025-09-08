@@ -4,7 +4,6 @@
 
 package internal
 
-
 import (
 	"bytes"
 	"compress/gzip"
@@ -36,7 +35,6 @@ func bindataRead(data []byte, name string) ([]byte, error) {
 
 	return buf.Bytes(), nil
 }
-
 
 type asset struct {
 	bytes []byte
@@ -80,17 +78,17 @@ func (fi bindataFileInfo) Sys() interface{} {
 
 var _bindataTengoOutmessagetengo = []byte(
 	"\x1f\x8b\x08\x00\x00\x00\x00\x00\x00\xff\xc4\x91\x3d\x8f\xda\x40\x10\x86\xfb\xfd\x15\x13\x37\xb1\x2d\x07\xe7\xa3" +
-	"\xb3\x64\x59\x11\x45\x94\x2e\x8a\x92\x0a\xd0\xb1\xac\x07\x33\xd2\x7a\xc7\x1a\x8f\x31\x88\xe3\xbf\x9f\xcc\x01\x47" +
-	"\x7f\xc5\x75\xef\xae\x9e\x9d\x77\x1f\x4d\x9e\x9a\xbd\x15\xb2\x1b\x8f\x3d\xd8\xbd\x25\x3f\x45\x30\x82\xb6\xfe\xc2" +
-	"\xc1\x1f\x0b\x43\xe1\xa7\x73\x3c\x04\xcd\x80\xc2\x1f\x61\x65\xc7\x7e\xca\xf3\x9d\x0d\x01\x2f\xf1\x97\x55\x1c\xed" +
-	"\xd1\xf0\xa0\x77\x98\x07\x7d\xa3\x79\xd0\x3b\xce\x83\xde\xf8\xd7\x9e\x51\x48\xb1\x30\x6d\xdf\xfc\xc3\x83\x66\xd0" +
-	"\xf6\xcd\xff\x1e\x25\xd8\x16\x4d\x9a\x1b\xa3\x78\x50\x28\x4a\xa0\xb6\x63\xd1\x38\x9a\xce\x51\x62\x4c\x9e\x43\xaf" +
-	"\x42\x1d\x90\x38\x70\xec\x59\xfa\xe9\x8e\xb6\x30\xe2\x67\x41\x08\xac\xd0\x63\xa8\x29\x34\xa0\x0c\x36\x5c\xc0\x8d" +
-	"\x50\xdd\x20\x8c\x78\x7d\xac\x3b\x84\xdf\x7f\xe7\xb7\x01\xb4\x7d\xd0\x84\xb2\x84\x88\xc4\x45\x70\x32\x00\x00\x82" +
-	"\xd3\x3f\xa6\xfe\x99\xe0\x93\xe3\xb6\x23\x8f\xf1\x7a\x79\xf8\xfa\x23\xae\x8a\x65\x7d\xfa\x96\x7d\x3f\xc7\x55\x91" +
-	"\x5d\x63\x52\x25\xd5\xf3\x62\x51\xb8\xa0\xe2\x8b\xd5\x6a\x9d\x5c\xc6\x5c\x4d\x4b\xc1\x99\x60\xe7\xad\xc3\xf8\x26" +
-	"\x1f\x45\x89\x39\x9b\xf7\x6b\xe4\x29\x6d\x1f\x57\x00\x9f\x3e\xc6\x24\xcd\xcd\x4b\x00\x00\x00\xff\xff\x40\xb8\x54" +
-	"\xb8\x64\x02\x00\x00")
+		"\xb3\x64\x59\x11\x45\x94\x2e\x8a\x92\x0a\xd0\xb1\xac\x07\x33\xd2\x7a\xc7\x1a\x8f\x31\x88\xe3\xbf\x9f\xcc\x01\x47" +
+		"\x7f\xc5\x75\xef\xae\x9e\x9d\x77\x1f\x4d\x9e\x9a\xbd\x15\xb2\x1b\x8f\x3d\xd8\xbd\x25\x3f\x45\x30\x82\xb6\xfe\xc2" +
+		"\xc1\x1f\x0b\x43\xe1\xa7\x73\x3c\x04\xcd\x80\xc2\x1f\x61\x65\xc7\x7e\xca\xf3\x9d\x0d\x01\x2f\xf1\x97\x55\x1c\xed" +
+		"\xd1\xf0\xa0\x77\x98\x07\x7d\xa3\x79\xd0\x3b\xce\x83\xde\xf8\xd7\x9e\x51\x48\xb1\x30\x6d\xdf\xfc\xc3\x83\x66\xd0" +
+		"\xf6\xcd\xff\x1e\x25\xd8\x16\x4d\x9a\x1b\xa3\x78\x50\x28\x4a\xa0\xb6\x63\xd1\x38\x9a\xce\x51\x62\x4c\x9e\x43\xaf" +
+		"\x42\x1d\x90\x38\x70\xec\x59\xfa\xe9\x8e\xb6\x30\xe2\x67\x41\x08\xac\xd0\x63\xa8\x29\x34\xa0\x0c\x36\x5c\xc0\x8d" +
+		"\x50\xdd\x20\x8c\x78\x7d\xac\x3b\x84\xdf\x7f\xe7\xb7\x01\xb4\x7d\xd0\x84\xb2\x84\x88\xc4\x45\x70\x32\x00\x00\x82" +
+		"\xd3\x3f\xa6\xfe\x99\xe0\x93\xe3\xb6\x23\x8f\xf1\x7a\x79\xf8\xfa\x23\xae\x8a\x65\x7d\xfa\x96\x7d\x3f\xc7\x55\x91" +
+		"\x5d\x63\x52\x25\xd5\xf3\x62\x51\xb8\xa0\xe2\x8b\xd5\x6a\x9d\x5c\xc6\x5c\x4d\x4b\xc1\x99\x60\xe7\xad\xc3\xf8\x26" +
+		"\x1f\x45\x89\x39\x9b\xf7\x6b\xe4\x29\x6d\x1f\x57\x00\x9f\x3e\xc6\x24\xcd\xcd\x4b\x00\x00\x00\xff\xff\x40\xb8\x54" +
+		"\xb8\x64\x02\x00\x00")
 
 func bindataTengoOutmessagetengoBytes() ([]byte, error) {
 	return bindataRead(
@@ -99,8 +97,6 @@ func bindataTengoOutmessagetengoBytes() ([]byte, error) {
 	)
 }
 
-
-
 func bindataTengoOutmessagetengo() (*asset, error) {
 	bytes, err := bindataTengoOutmessagetengoBytes()
 	if err != nil {
@@ -108,11 +104,11 @@ func bindataTengoOutmessagetengo() (*asset, error) {
 	}
 
 	info := bindataFileInfo{
-		name: "tengo/outmessage.tengo",
-		size: 612,
+		name:        "tengo/outmessage.tengo",
+		size:        612,
 		md5checksum: "",
-		mode: os.FileMode(420),
-		modTime: time.Unix(1555622139, 0),
+		mode:        os.FileMode(420),
+		modTime:     time.Unix(1555622139, 0),
 	}
 
 	a := &asset{bytes: bytes, info: info}
@@ -120,12 +116,9 @@ func bindataTengoOutmessagetengo() (*asset, error) {
 	return a, nil
 }
 
-
-//
 // Asset loads and returns the asset for the given name.
 // It returns an error if the asset could not be found or
 // could not be loaded.
-//
 func Asset(name string) ([]byte, error) {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	if f, ok := _bindata[cannonicalName]; ok {
@@ -138,11 +131,9 @@ func Asset(name string) ([]byte, error) {
 	return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
 }
 
-//
 // MustAsset is like Asset but panics when Asset would return an error.
 // It simplifies safe initialization of global variables.
 // nolint: deadcode
-//
 func MustAsset(name string) []byte {
 	a, err := Asset(name)
 	if err != nil {
@@ -152,10 +143,8 @@ func MustAsset(name string) []byte {
 	return a
 }
 
-//
 // AssetInfo loads and returns the asset info for the given name.
 // It returns an error if the asset could not be found or could not be loaded.
-//
 func AssetInfo(name string) (os.FileInfo, error) {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	if f, ok := _bindata[cannonicalName]; ok {
@@ -168,10 +157,8 @@ func AssetInfo(name string) (os.FileInfo, error) {
 	return nil, &os.PathError{Op: "open", Path: name, Err: os.ErrNotExist}
 }
 
-//
 // AssetNames returns the names of the assets.
 // nolint: deadcode
-//
 func AssetNames() []string {
 	names := make([]string, 0, len(_bindata))
 	for name := range _bindata {
@@ -180,28 +167,26 @@ func AssetNames() []string {
 	return names
 }
 
-//
 // _bindata is a table, holding each asset generator, mapped to its name.
-//
 var _bindata = map[string]func() (*asset, error){
 	"tengo/outmessage.tengo": bindataTengoOutmessagetengo,
 }
 
-//
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
 // following hierarchy:
-//     data/
-//       foo.txt
-//       img/
-//         a.png
-//         b.png
+//
+//	data/
+//	  foo.txt
+//	  img/
+//	    a.png
+//	    b.png
+//
 // then AssetDir("data") would return []string{"foo.txt", "img"}
 // AssetDir("data/img") would return []string{"a.png", "b.png"}
 // AssetDir("foo.txt") and AssetDir("notexist") would return an error
 // AssetDir("") will return []string{"data"}.
-//
 func AssetDir(name string) ([]string, error) {
 	node := _bintree
 	if len(name) != 0 {
@@ -211,18 +196,18 @@ func AssetDir(name string) ([]string, error) {
 			node = node.Children[p]
 			if node == nil {
 				return nil, &os.PathError{
-					Op: "open",
+					Op:   "open",
 					Path: name,
-					Err: os.ErrNotExist,
+					Err:  os.ErrNotExist,
 				}
 			}
 		}
 	}
 	if node.Func != nil {
 		return nil, &os.PathError{
-			Op: "open",
+			Op:   "open",
 			Path: name,
-			Err: os.ErrNotExist,
+			Err:  os.ErrNotExist,
 		}
 	}
 	rv := make([]string, 0, len(node.Children))
@@ -231,7 +216,6 @@ func AssetDir(name string) ([]string, error) {
 	}
 	return rv, nil
 }
-
 
 type bintree struct {
 	Func     func() (*asset, error)

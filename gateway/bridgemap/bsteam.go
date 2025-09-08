@@ -1,3 +1,4 @@
+//go:build !nosteam
 // +build !nosteam
 
 package bridgemap
