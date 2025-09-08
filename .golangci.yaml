@@ -165,6 +165,10 @@ issues:
   # Default is false.
   new: false
 
+  # Show only new issues created after git revision `REV`
+  # new-from-rev: "HEAD~1"
+  new-from-merge-base: "master"
+
 formatters:
   settings:
     gofmt:
