@@ -30,6 +30,8 @@ jobs:
       uses: actions/checkout@v5
       with:
           fetch-depth: 0
+    - name: go fmt
+      run: test -z "$(gofmt -l bridge/ gateway/ internal/ matterclient/ matterhook/ *.go)"
     - name: Test
       run: go test ./... -mod=vendor
     - name: Build
