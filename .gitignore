@@ -3,7 +3,11 @@
 /matterbridge.exe
 
 # Exclude configuration file
-matterbridge.toml
+/matterbridge.toml
 
 # Exclude IDE Files
 .vscode
+
+tests/**/*.log
+tests/api/api
+tests/xmpp/xmpp

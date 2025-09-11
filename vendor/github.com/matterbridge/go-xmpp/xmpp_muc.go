@@ -40,6 +40,23 @@ func (c *Client) JoinMUCNoHistory(jid, nick string) (n int, err error) {
 		xmlEscape(jid), xmlEscape(nick), nsMUC)
 }
 
+// Don't use this function outside of tests!
+//
+// It will eat your messages!!!
+func (c *Client) JoinOrCreateMUCNoHistoryDoNotUseOutsideTests(jid, nick string) (n int, err error) {
+	if nick == "" {
+		nick = c.jid
+	}
+
+	n, err = c.JoinMUCNoHistory(jid, nick)
+	if err != nil {
+		return 0, err
+	}
+
+	// Accept default room configuration
+	return fmt.Fprintf(c.stanzaWriter, "<iq to='%s' id='config_room' type='set'><query xmlns='http://jabber.org/protocol/muc#owner'><x xmlns='jabber:x:data' type='submit'/></query></iq>", xmlEscape(jid))
+}
+
 // xep-0045 7.2
 func (c *Client) JoinMUC(jid, nick string, history_type, history int, history_date *time.Time) (n int, err error) {
 	if nick == "" {

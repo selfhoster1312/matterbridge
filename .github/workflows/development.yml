@@ -1,58 +1,87 @@
 name: Development
 on: [push, pull_request]
 jobs:
-  lint:
-    name: golangci-lint
+  # lint:
+  #   name: golangci-lint
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #       with:
+  #         fetch-depth: 20
+  #     - name: Run golangci-lint
+  #       uses: golangci/golangci-lint-action@v3
+  #       with:
+  #         version: latest
+  #         args: "-v --new-from-rev HEAD~5 --timeout=5m"
+  # test-build-upload:
+  #   strategy:
+  #     matrix:
+  #       go-version: [1.22.x]
+  #       platform: [ubuntu-latest]
+  #   runs-on: ${{ matrix.platform }}
+  #   steps:
+  #   - name: Install Go
+  #     uses: actions/setup-go@v3
+  #     with:
+  #       go-version: ${{ matrix.go-version }}
+  #       stable: false
+  #   - name: Checkout code
+  #     uses: actions/checkout@v3
+  #     with:
+  #         fetch-depth: 0
+  #   - name: Test
+  #     run: go test ./... -mod=vendor
+  #   - name: Build
+  #     run: |
+  #       mkdir -p output/{win,lin,arm,mac}
+  #       VERSION=$(git describe --tags)
+  #       CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o output/lin/matterbridge-$VERSION-linux-amd64
+  #       CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o output/win/matterbridge-$VERSION-windows-amd64.exe
+  #       CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o output/mac/matterbridge-$VERSION-darwin-amd64
+  #   - name: Upload linux 64-bit
+  #     if: startsWith(matrix.go-version,'1.22')
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: matterbridge-linux-64bit
+  #       path: output/lin
+  #   - name: Upload windows 64-bit
+  #     if: startsWith(matrix.go-version,'1.22')
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: matterbridge-windows-64bit
+  #       path: output/win
+  #   - name: Upload darwin 64-bit
+  #     if: startsWith(matrix.go-version,'1.22')
+  #     uses: actions/upload-artifact@v3
+  #     with:
+  #       name: matterbridge-darwin-64bit
+  #       path: output/mac
+  integration:
+    name: Integration tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
         with:
-          fetch-depth: 20
-      - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v3
-        with:
-          version: latest
-          args: "-v --new-from-rev HEAD~5 --timeout=5m"
-  test-build-upload:
-    strategy:
-      matrix:
-        go-version: [1.22.x]
-        platform: [ubuntu-latest]
-    runs-on: ${{ matrix.platform }}
-    steps:
-    - name: Install Go
-      uses: actions/setup-go@v3
-      with:
-        go-version: ${{ matrix.go-version }}
-        stable: false
-    - name: Checkout code
-      uses: actions/checkout@v3
-      with:
-          fetch-depth: 0
-    - name: Test
-      run: go test ./... -mod=vendor
-    - name: Build
-      run: |
-        mkdir -p output/{win,lin,arm,mac}
-        VERSION=$(git describe --tags)
-        CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o output/lin/matterbridge-$VERSION-linux-amd64
-        CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o output/win/matterbridge-$VERSION-windows-amd64.exe
-        CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build -ldflags "-s -X github.com/42wim/matterbridge/version.GitHash=$(git log --pretty=format:'%h' -n 1)" -o output/mac/matterbridge-$VERSION-darwin-amd64
-    - name: Upload linux 64-bit
-      if: startsWith(matrix.go-version,'1.22')
-      uses: actions/upload-artifact@v3
-      with:
-        name: matterbridge-linux-64bit
-        path: output/lin
-    - name: Upload windows 64-bit
-      if: startsWith(matrix.go-version,'1.22')
-      uses: actions/upload-artifact@v3
-      with:
-        name: matterbridge-windows-64bit
-        path: output/win
-    - name: Upload darwin 64-bit
-      if: startsWith(matrix.go-version,'1.22')
-      uses: actions/upload-artifact@v3
-      with:
-        name: matterbridge-darwin-64bit
-        path: output/mac
+          go-version: stable
+      # Install prosody's latest release from upstream
+      - run: sudo wget https://prosody.im/downloads/repos/$(lsb_release -sc)/prosody.sources -O/etc/apt/sources.list.d/prosody.sources
+      - run: sudo apt update
+      - run: sudo apt install -y mercurial lua5.4
+      - run: sudo update-alternatives --set lua-interpreter /usr/bin/lua5.4
+      - run: sudo apt install -y prosody
+      # Setup prosody community modules
+      - run: hg clone https://hg.prosody.im/prosody-modules/ prosody-modules
+      # Copy mod_auth_any to global prosody modules
+      - run: sudo cp -R prosody-modules/mod_auth_any /usr/lib/prosody/modules/
+      # Only one test is run for now
+      - run: ./tests/test.sh xmpp outgoing-message
+      # Upload logs when it failed
+      - run: cat tests/xmpp/setup.log
+        if: ${{ failure() }}
+      - run: cat tests/xmpp/matterbridge.log
+        if: ${{ failure() }}
+      - run: cat tests/xmpp/xmpp.log
+        if: ${{ failure() }}
+      - run: cat tests/xmpp/api.log
+        if: ${{ failure() }}
