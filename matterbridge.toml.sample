@@ -1332,98 +1332,6 @@ StripNick=false
 ShowTopicChange=false
 
 ###################################################################
-#steam section
-###################################################################
-[steam]
-#You can configure multiple servers "[steam.name]" or "[steam.name2]"
-#In this example we use [steam.gamechat]
-#REQUIRED
-
-[steam.gamechat]
-#login/pass of your bot.
-#Use a dedicated user for this and not your own account!
-#REQUIRED
-Login="yourlogin"
-Password="yourpass"
-
-#steamguard mail authcode (not the 2FA code)
-#OPTIONAL
-Authcode="ABCE12"
-
-## RELOADABLE SETTINGS
-## Settings below can be reloaded by editing the file
-
-#Whether to prefix messages from other bridges to matrix with the sender's nick.
-#Useful if username overrides for incoming webhooks isn't enabled on the
-#matrix server. If you set PrefixMessagesWithNick to true, each message
-#from bridge to matrix will by default be prefixed by the RemoteNickFormat setting. i
-#OPTIONAL (default false)
-PrefixMessagesWithNick=false
-
-#Nicks you want to ignore.
-#Regular expressions supported
-#Messages from those users will not be sent to other bridges.
-#OPTIONAL
-IgnoreNicks="spammer1 spammer2"
-
-#Messages you want to ignore.
-#Messages matching these regexp will be ignored and not sent to other bridges
-#See https://regex-golang.appspot.com/assets/html/index.html for more regex info
-#OPTIONAL (example below ignores messages starting with ~~ or messages containing badword
-IgnoreMessages="^~~ badword"
-
-#messages you want to replace.
-#it replaces outgoing messages from the bridge.
-#so you need to place it by the sending bridge definition.
-#regular expressions supported
-#some examples:
-#this replaces cat => dog and sleep => awake
-#replacemessages=[ ["cat","dog"], ["sleep","awake"] ]
-#this replaces every number with number.  123 => numbernumbernumber
-#replacemessages=[ ["[0-9]","number"] ]
-#optional (default empty)
-ReplaceMessages=[ ["cat","dog"] ]
-
-#nicks you want to replace.
-#see replacemessages for syntax
-#optional (default empty)
-ReplaceNicks=[ ["user--","user"] ]
-
-#Extractnicks is used to for example rewrite messages from other relaybots
-#See https://github.com/42wim/matterbridge/issues/713 and https://github.com/42wim/matterbridge/issues/466
-#some examples:
-#this replaces a message like "Relaybot: <relayeduser> something interesting" to "relayeduser: something interesting"
-#ExtractNicks=[ [ "Relaybot", "<(.*?)>\\s+" ] ]
-#you can use multiple entries for multiplebots
-#this also replaces a message like "otherbot: (relayeduser) something else" to "relayeduser: something else"
-#ExtractNicks=[ [ "Relaybot", "<(.*?)>\\s+" ],[ "otherbot","\\((.*?)\\)\\s+" ]
-#OPTIONAL (default empty)
-ExtractNicks=[ ["otherbot","<(.*?)>\\s+" ] ]
-
-#extra label that can be used in the RemoteNickFormat
-#optional (default empty)
-Label=""
-
-#RemoteNickFormat defines how remote users appear on this bridge
-#See [general] config section for default options
-RemoteNickFormat="[{PROTOCOL}] <{NICK}> "
-
-#Enable to show users joins/parts from other bridges
-#Currently works for messages from the following bridges: irc, mattermost, mumble, slack, discord
-#OPTIONAL (default false)
-ShowJoinPart=false
-
-#StripNick only allows alphanumerical nicks. See https://github.com/42wim/matterbridge/issues/285
-#It will strip other characters from the nick
-#OPTIONAL (default false)
-StripNick=false
-
-#Enable to show topic changes from other bridges
-#Only works hiding/show topic changes from slack bridge for now
-#OPTIONAL (default false)
-ShowTopicChange=false
-
-###################################################################
 # NCTalk (Nextcloud Talk)
 ###################################################################
 
@@ -1861,8 +1769,6 @@ enable=true
     # -------------------------------------------------------------------------------------------------------------------------------------
     #   slack    |   channel name     |            general            | Do not include the # symbol
     #            |    channel id      |           ID:C123456          | The underlying ID of a channel. This doesn't work with webhooks.
-    # -------------------------------------------------------------------------------------------------------------------------------------
-    #   steam    |      chatid        |         example needed        | The number in the URL when you click "enter chat room" in the browser
     # -------------------------------------------------------------------------------------------------------------------------------------
     #   nctalk   |      token         |           xs25tz5y            | The token in the URL when you are in a chat. It will be the last part of the URL.
     # -------------------------------------------------------------------------------------------------------------------------------------

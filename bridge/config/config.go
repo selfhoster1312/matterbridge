@@ -88,7 +88,6 @@ type ChannelMembers []ChannelMember
 
 type Protocol struct {
 	AllowMention           []string // discord
-	AuthCode               string   // steam
 	BindAddress            string   // mattermost, slack // DEPRECATED
 	Buffer                 int      // api
 	Charset                string   // irc
