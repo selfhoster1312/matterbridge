@@ -21,9 +21,6 @@ Matterbridge supports many protocols, although not all of them support all featu
     - [xmpp docs](xmpp/)
     - [xmpp settings](xmpp/settings.md)
   - Channel format: `channel_name` (for `channel_name@muc.server.org` where `muc.server.org` has been configured as `Muc` for the corresponding xmpp account)
-- [Keybase](https://keybase.io)
-  - Matterbridge [keybase docs](keybase/)
-  - Channel format: `channel_name` (without the leading `#`), or `general` if your team doesn't have multiple channels
 - [Matrix](https://matrix.org)
   - Matterbridge docs:
     - [matrix docs](matrix/)
@@ -93,6 +90,9 @@ Matterbridge supports many protocols, although not all of them support all featu
 
 ## Dropped official support
 
+- [Keybase](https://keybase.io)
+  - Dropped because noone is maintaining it on our side
+  - Reach out [here](https://github.com/matterbridge-org/community/issues/1) if you want to help bring it back
 - [Gitter](https://gitter.im)
   - Has moved to matrix protocol
 - [Harmony](https://harmonyapp.io)

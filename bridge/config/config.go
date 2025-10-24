@@ -158,7 +158,7 @@ type Protocol struct {
 	StripMarkdown          bool       // irc
 	SyncTopic              bool       // slack
 	TengoModifyMessage     string     // general
-	Team                   string     // mattermost, keybase
+	Team                   string     // mattermost
 	TeamID                 string     // msteams
 	TenantID               string     // msteams
 	Token                  string     // slack, discord, api, matrix

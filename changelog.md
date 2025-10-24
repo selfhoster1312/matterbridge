@@ -9,6 +9,8 @@
   - harmony protocol does not exist anymore
   - gitter protocol does not exist anymore ; gitter.im is now a matrix protocol server
   - steam protocol has changed profoundly
+  - keybase has been removed because we don't have a maintainer for it. See
+    [issue #9](https://github.com/matterbridge-org/matterbridge/issues/9)
 
 # v1.26.0
 

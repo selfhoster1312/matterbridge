@@ -14,7 +14,6 @@ require (
 	github.com/gorilla/schema v1.4.1
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jpillora/backoff v1.0.0
-	github.com/keybase/go-keybase-chat-bot v0.0.0-20221220212439-e48d9abd2c20
 	github.com/kyokomi/emoji/v2 v2.2.13
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/lrstanley/girc v0.0.0-20240823210506-80555f2adb03
