@@ -97,7 +97,6 @@ Matterbridge supports many protocols, although not all of them support all featu
   - Has moved to matrix protocol
 - [Harmony](https://harmonyapp.io)
   - Does not exist anymore?
-
 - [Steam](https://store.steampowered.com/)
   - Not supported anymore, see [here](https://github.com/Philipp15b/go-steam/issues/94) for more info.
 

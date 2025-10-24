@@ -9,7 +9,6 @@ Matterbridge wouldn't exist without these libraries:
 - gops - <https://github.com/google/gops>
 - gozulipbot - <https://github.com/ifo/gozulipbot>
 - gumble - <https://github.com/layeh/gumble>
-- harmony - <https://github.com/harmony-development/shibshib>
 - irc - <https://github.com/lrstanley/girc>
 - keybase - <https://github.com/keybase/go-keybase-chat-bot>
 - matrix - <https://github.com/matrix-org/gomatrix>

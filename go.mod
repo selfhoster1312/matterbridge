@@ -13,7 +13,6 @@ require (
 	github.com/gomarkdown/markdown v0.0.0-20240419095408-642f0ee99ae2
 	github.com/google/gops v0.3.27
 	github.com/gorilla/schema v1.4.1
-	github.com/harmony-development/shibshib v0.0.0-20220101224523-c98059d09cfa
 	github.com/hashicorp/golang-lru v1.0.2
 	github.com/jpillora/backoff v1.0.0
 	github.com/keybase/go-keybase-chat-bot v0.0.0-20221220212439-e48d9abd2c20

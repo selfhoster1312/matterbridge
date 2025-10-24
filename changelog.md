@@ -4,7 +4,9 @@
 
 - Main development repository is now https://github.com/matterbridge-org/matterbridge
 - History was rewritten to remove the vendor/ folder, easing PR reviews and making the
-  repository much lighter. [See issue #5](https://github.com/matterbridge-org/community/issues/5).
+  repository much lighter. [See issue community/#5](https://github.com/matterbridge-org/community/issues/5).
+- Removed protocols, see [issue community/#9](https://github.com/matterbridge-org/matterbridge/issues/9)
+  - harmony protocol does not exist anymore
 
 # v1.26.0
 
