@@ -28,11 +28,11 @@ Matterbridge does not relay messages from the user account that it is logged in 
    * [API](#api)
 
 # Support bridging between any protocols
-Supported protocols are Discord, Gitter, IRC, Mattermost, Matrix, RocketChat, Slack, Steam, Telegram, XMPP (and our own rest API)   
+Supported protocols are Discord, IRC, Mattermost, Matrix, RocketChat, Slack, Steam, Telegram, XMPP (and our own rest API)   
 You can bridge between any (number) protocols. Even the same protocol!
 
-For example you can bridge Discord, Gitter, Matrix and Slack.    
-A message typed in Slack will be shown in Discord, Gitter and Matrix (and the other way around)
+For example you can bridge Discord, Matrix and Slack.    
+A message typed in Slack will be shown in Discord, and Matrix (and the other way around)
 
 Follow the steps in [[How-to-create-your-config]]
 
@@ -47,7 +47,6 @@ To create the setup above you'll have to create 2 gateways.
 See Gateway Config Advanced TODO
 # Message edits and deletes
 * Support incoming and outgoing edits and deletes: Discord, Mattermost, Slack, Matrix and Telegram.
-* Support only incoming edits: Gitter. (gitter API doesn't support outgoing edits)
 * Support only incoming edits/deletes: RocketChat
 * Support only edits: XMPP
 * Support no deletes or edits: IRC, Steam(NR)
@@ -58,10 +57,10 @@ NR = Not researched
 The logic is: Public links > Native file upload > External mediaserver > Private links
 
 This means that bridges:
-- will receive the "public link" from protocols that have links to files without authentication (Gitter, IRC, Discord)
+- will receive the "public link" from protocols that have links to files without authentication (IRC, Discord)
 - that support native file uploads (Discord,Matrix,Mattermost,Slack,Telegram,Rocketchat) will receive a uploaded copy of the file from protocols that have links to files with authentication (Matrix, Mattermost, Slack, Telegram)
-- that do NOT support native file uploads (Gitter, IRC, Steam, XMPP) will receive the "public link" from your "external mediaserver" from protocols that have links to files with authentication (Matrix, Mattermost, Slack, Telegram). (If you have configured an "external mediaserver")
-- that do NOT support native file uploads (Gitter, IRC, Steam, XMPP) will receive the "private link" from protocols that have links to files with authentication (Matrix, Mattermost, Slack, Telegram). (If you have not configured an "external mediaserver")
+- that do NOT support native file uploads (IRC, Steam, XMPP) will receive the "public link" from your "external mediaserver" from protocols that have links to files with authentication (Matrix, Mattermost, Slack, Telegram). (If you have configured an "external mediaserver")
+- that do NOT support native file uploads (IRC, Steam, XMPP) will receive the "private link" from protocols that have links to files with authentication (Matrix, Mattermost, Slack, Telegram). (If you have not configured an "external mediaserver")
 
 
 For example if you bridge between slack and discord:   
@@ -70,7 +69,7 @@ When you upload a file to slack. The link you get from slack needs authenticatio
 
 # Username and avatar spoofing
 Username spoofing (so it looks like the remote users) only works with webhooks for Discord, Mattermost, Slack.   
-Matterbridge reads avatars from Discord, Gitter, Mattermost and Slack but can only send them to Discord, Mattermost and Slack when webhooks are enabled. (Gitter doesn't allow avatar changes). 
+Matterbridge reads avatars from Discord, Mattermost and Slack but can only send them to Discord, Mattermost and Slack when webhooks are enabled.
 
 To have avatars from mattermost visible on the other bridges, you'll have to use the external mediaserver setup. This is because avatar images from mattermost aren't publicly visible when not logged into mattermost. This means we need to download the avatar images, and upload them to the public mediaserver, and use this (now public) avatar URL in the messages sent to another bridge, eg slack.
 

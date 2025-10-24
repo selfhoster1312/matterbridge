@@ -232,7 +232,7 @@ Example:
 
 ## MediaServerDownload
 The MediaServerDownload will be used so that bridges without native uploading support:
-gitter, irc and xmpp will be shown links to the files on MediaServerDownload
+irc and xmpp will be shown links to the files on MediaServerDownload
 More information https://github.com/42wim/matterbridge/wiki/Mediaserver-setup-%28advanced%29
 
 Setting: OPTIONAL, RELOADABLE, GENERAL \

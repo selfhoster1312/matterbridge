@@ -11,9 +11,9 @@ the matterbridge API is here.
 
 Matterbridge API spec can be found on https://app.swaggerhub.com/apis-docs/matterbridge/matterbridge-api/0.1.0-oas3
 
-## Example discord/gitter/api gateway
+## Example discord/api gateway
 
-This example creates a gateway containing 3 bridges: discord,gitter and api.   
+This example creates a gateway containing 2 bridges: discord, and api.   
 The API will listen on localhost port 4242.
 
 ### Configure matterbridge.toml
@@ -44,9 +44,6 @@ The full example
 Token="MTk4NjIyNDgzNDcdOTI1MjQ4.Cl2FMZ.ZnCjm1XVW7vRze4b7Cq4se7kKWs-abD"
 Server="myserver"
 
-[gitter.mygitter]
-Token="319fda1761c6875739a489b6772daf2ace4b95d0"
-
 [api.myapi]
 BindAddress="127.0.0.1:4242"
 Buffer=1000
@@ -59,10 +56,6 @@ enable=true
 [[gateway.inout]]
 account="discord.mydiscord"
 channel="general"
-
-[[gateway.inout]]
-account="gitter.mygitter"
-channel="42wim/mygreatproject"
 
 [[gateway.inout]]
 account="api.myapi"
@@ -127,7 +120,7 @@ At connect you first get a `api_connected` event, then you'll get a http stream 
 
 We now post a `test` message from `randomuser` to the gateway `gateway1`
 
-Every bridge on the gateway (gitter and discord) will now receive this message.
+The discord bridge will now receive this message.
 
 ```bash
 curl -XPOST -H 'Content-Type: application/json'  -d '{"text":"test","username":"randomuser","gateway":"gateway1"}' http://localhost:4242/api/message

@@ -7,6 +7,7 @@
   repository much lighter. [See issue community/#5](https://github.com/matterbridge-org/community/issues/5).
 - Removed protocols, see [issue community/#9](https://github.com/matterbridge-org/matterbridge/issues/9)
   - harmony protocol does not exist anymore
+  - gitter protocol does not exist anymore ; gitter.im is now a matrix protocol server
 
 # v1.26.0
 

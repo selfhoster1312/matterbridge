@@ -512,11 +512,6 @@ StripNick=false
 ShowTopicChange=false
 
 ###################################################################
-#Gitter section
-#Gitter has been moved to matrix - see https://github.com/42wim/matterbridge/issues/1969 how to migrate
-###################################################################
-
-###################################################################
 #
 # Keybase
 # You should have a separate bridge account on Keybase
@@ -1707,7 +1702,7 @@ StripNick=false
 #for if Matterbridge has write access to the directory your webserver is serving.
 #It is an alternative to MediaServerUpload.
 #The MediaServerDownload will be used so that bridges without native uploading support:
-#gitter, irc and xmpp will be shown links to the files on MediaServerDownload
+#irc and xmpp will be shown links to the files on MediaServerDownload
 #
 #More information https://github.com/42wim/matterbridge/wiki/Mediaserver-setup-%28advanced%29
 #OPTIONAL (default empty)
@@ -1848,8 +1843,6 @@ enable=true
     #            |      channel       |            general            | Do not include the # symbol
     #  discord   |    channel id      |          ID:123456789         | See https://github.com/42wim/matterbridge/issues/57
     #            | category/channel   |          Media/gaming         | Without # symbol. If you're using discord categories to group your channels
-    # -------------------------------------------------------------------------------------------------------------------------------------
-    #   gitter   |  username/room     |            general            | As seen in the gitter.im URL
     # -------------------------------------------------------------------------------------------------------------------------------------
     #   hipchat  |    id_channel      |         example needed        | See https://www.hipchat.com/account/xmpp for the correct channel
     # -------------------------------------------------------------------------------------------------------------------------------------

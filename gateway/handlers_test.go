@@ -48,9 +48,9 @@ func TestExtractNick(t *testing.T) {
 		resultText     string
 	}{
 		"test1": {
-			search:         "fromgitter",
+			search:         "fromsomething",
 			extract:        "<(.*?)>\\s+",
-			username:       "fromgitter",
+			username:       "fromsomething",
 			text:           "<userx> blahblah",
 			resultUsername: "userx",
 			resultText:     "blahblah",

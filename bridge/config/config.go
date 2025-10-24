@@ -97,8 +97,8 @@ type Protocol struct {
 	Debug                  bool     // general
 	DebugLevel             int      // only for irc now
 	DisableWebPagePreview  bool     // telegram
-	EditSuffix             string   // mattermost, slack, discord, telegram, gitter
-	EditDisable            bool     // mattermost, slack, discord, telegram, gitter
+	EditSuffix             string   // mattermost, slack, discord, telegram
+	EditDisable            bool     // mattermost, slack, discord, telegram
 	HTMLDisable            bool     // matrix
 	IconURL                string   // mattermost, slack
 	IgnoreFailureOnStart   bool     // general
@@ -162,7 +162,7 @@ type Protocol struct {
 	Team                   string     // mattermost, keybase
 	TeamID                 string     // msteams
 	TenantID               string     // msteams
-	Token                  string     // gitter, slack, discord, api, matrix
+	Token                  string     // slack, discord, api, matrix
 	Topic                  string     // zulip
 	URL                    string     // mattermost, slack // DEPRECATED
 	UseAPI                 bool       // mattermost, slack
@@ -222,7 +222,6 @@ type BridgeValues struct {
 	Slack              map[string]Protocol
 	SlackLegacy        map[string]Protocol
 	Steam              map[string]Protocol
-	Gitter             map[string]Protocol
 	XMPP               map[string]Protocol
 	Discord            map[string]Protocol
 	Telegram           map[string]Protocol

@@ -1,6 +1,6 @@
 Matterbridge is not going to implement it's own "mediaserver" instead we make use of other tools that are good at this sort of stuff. 
 This mediaserver will be used to upload media to services that don't have support for uploading images/video/files.   
-At this moment this is xmpp, gitter and irc
+At this moment this is xmpp and irc
 
 There are 2 options to set this up:
 * You already have a webserver running

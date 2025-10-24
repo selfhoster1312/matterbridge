@@ -65,7 +65,7 @@ For more development guidelines, see [docs/development/](docs/development/).
 
 Questions or want to test on your favorite platform? Join us on:
 
-- federated networks: [Gitter][mb-gitter], [Jabber/XMPP][mb-xmpp], [Matrix][mb-matrix]
+- federated networks: [Jabber/XMPP][mb-xmpp], [Matrix][mb-matrix]
 - non-free centralized networks: [Discord][mb-discord], [Keybase][mb-keybase], [Slack][mb-slack], [Telegram][mb-telegram], [Twitch][mb-twitch]
 - self-hostable centralized networks: [IRC][mb-irc], [Mattermost][mb-mattermost], [Rocket.Chat][mb-rocketchat], [Zulip][mb-zulip]
 

@@ -6,7 +6,6 @@ This guide explains how to create a new protocol backend to support a new gatewa
 
 - [ ] Create a new catalog in [`/bridge` folder](https://github.com/42wim/matterbridge/tree/master/bridge) and a main file named after the bridge you are creating, such as `whatsapp.go`
 - [ ] Implement a [`Bridger` interface](https://github.com/42wim/matterbridge/blob/2cfd880cdb0df29771bf8f31df8d990ab897889d/bridge/bridge.go#L11-L16)
-- [ ] [`gitter`](https://github.com/42wim/matterbridge/blob/master/bridge/gitter/gitter.go) is a relatively simple bridge that you might use as a reference to adapt
 - [ ] Mention your bridge exists in [`/gateway/bridgemap/bridgemap.go`](https://github.com/42wim/matterbridge/blob/master/gateway/bridgemap/bridgemap.go)
 - [ ] Divide functionality in several files, as it is done for [slack](https://github.com/42wim/matterbridge/tree/master/bridge)
   - `yourbridge.go` with main struct and implementation of the `Bridger` interface
