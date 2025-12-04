@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1" //nolint:gosec
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -72,8 +73,7 @@ func (gw *Gateway) handleFiles(msg *config.Message) {
 
 	// If we don't have a attachfield or we don't have a mediaserver configured return
 	if msg.Extra == nil ||
-		(gw.BridgeValues().General.MediaServerUpload == "" &&
-			gw.BridgeValues().General.MediaDownloadPath == "") {
+		gw.mediaServer == nil {
 		return
 	}
 
@@ -91,28 +91,18 @@ func (gw *Gateway) handleFiles(msg *config.Message) {
 
 		sha1sum := fmt.Sprintf("%x", sha1.Sum(*fi.Data))[:8] //nolint:gosec
 
-		if gw.BridgeValues().General.MediaServerUpload != "" {
-			// Use MediaServerUpload. Upload using a PUT HTTP request and basicauth.
-			if err := gw.handleFilesUpload(&fi); err != nil {
-				gw.logger.Error(err)
-				continue
-			}
-		} else {
-			// Use MediaServerPath. Place the file on the current filesystem.
-			if err := gw.handleFilesLocal(&fi); err != nil {
-				gw.logger.Error(err)
-				continue
-			}
+		downloadURL, err := gw.mediaServer.handleFilesUpload(&fi)
+		if err != nil {
+			gw.logger.Error(err)
+			continue
 		}
 
 		// Download URL.
-		durl := gw.BridgeValues().General.MediaServerDownload + "/" + sha1sum + "/" + fi.Name
-
-		gw.logger.Debugf("mediaserver download URL = %s", durl)
+		gw.logger.Debugf("mediaserver download URL = %s", downloadURL)
 
 		// We uploaded/placed the file successfully. Add the SHA and URL.
 		extra := msg.Extra["file"][i].(config.FileInfo)
-		extra.URL = durl
+		extra.URL = downloadURL
 		extra.SHA = sha1sum
 		msg.Extra["file"][i] = extra
 	}
@@ -156,7 +146,7 @@ func (gw *Gateway) handleFilesLocal(fi *config.FileInfo) error {
 	path := dir + "/" + fi.Name
 	gw.logger.Debugf("mediaserver path placing file: %s", path)
 
-	err = os.WriteFile(path, *fi.Data, os.ModePerm) //nolint:gosec
+	err = ioutil.WriteFile(path, *fi.Data, os.ModePerm)
 	if err != nil {
 		return fmt.Errorf("mediaserver path failed, could not writefile: %s %#v", err, err)
 	}
