@@ -47,6 +47,8 @@
 - discord
   - attached files are always downloaded, so when the media server is enabled, URLs can stay valid
     longer than Discord URLs ([#37](https://github.com/matterbridge-org/matterbridge/issues/37))
+- irc
+  - when there are attachments in the message, the body is now sent instead of being discarded silently
 
 ## Upstream
 

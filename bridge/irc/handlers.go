@@ -50,6 +50,13 @@ func (b *Birc) handleFiles(msg *config.Message) bool {
 	if len(msg.Extra["file"]) == 0 {
 		return false
 	}
+
+	// We have some attachments, which may or may not have a caption
+	// First, let's print the message body, if any
+	if msg.Text != "" {
+		b.Local <- config.Message{Text: msg.Text, Username: msg.Username, Channel: msg.Channel, Event: msg.Event}
+	}
+
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
 		if fi.Comment != "" {
