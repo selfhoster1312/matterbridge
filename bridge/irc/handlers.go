@@ -59,14 +59,27 @@ func (b *Birc) handleFiles(msg *config.Message) bool {
 
 	for _, f := range msg.Extra["file"] {
 		fi := f.(config.FileInfo)
-		if fi.Comment != "" {
-			msg.Text += fi.Comment + " : "
+
+		if fi.URL == "" {
+			// IRC does not support raw bytes upload.
+			//
+			// Here we just produce an error to be announced and logged, hoping the
+			// matterbridge operator will finally enable the media server.
+			msg.Text = fmt.Sprintf("Could not share file %s because the media server is disabled and no public URL was provided for that file.", fi.Name)
+			b.Local <- config.Message{Text: msg.Text, Username: msg.Username, Channel: msg.Channel, Event: msg.Event}
+
+			b.Log.Error(msg.Text)
+
+			continue
 		}
-		if fi.URL != "" {
+
+		// File has a public URL, either because it's provided by the remote bridge,
+		// or because the media server is enabled. Share it alongside the
+		// attachment caption, if any.
+		if fi.Comment == "" {
 			msg.Text = fi.URL
-			if fi.Comment != "" {
-				msg.Text = fi.Comment + " : " + fi.URL
-			}
+		} else {
+			msg.Text = fi.Comment + " : " + fi.URL
 		}
 		b.Local <- config.Message{Text: msg.Text, Username: msg.Username, Channel: msg.Channel, Event: msg.Event}
 	}

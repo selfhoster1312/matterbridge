@@ -49,6 +49,8 @@
     longer than Discord URLs ([#37](https://github.com/matterbridge-org/matterbridge/issues/37))
 - irc
   - when there are attachments in the message, the body is now sent instead of being discarded silently
+  - when an attachment has no public URL, an error message is printed/logged encouraging the
+    matterbridge operator to enable the mediaserver, instead of producing an incoherent message
 
 ## Upstream
 
