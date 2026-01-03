@@ -23,8 +23,6 @@ Key points
 Sample matterbridge configuration (in [general])
 ```
 [general]
-# tell matterbridge to upload to the bucket
-MediaServerUpload="s3://matterbridge"
 # public URL base where objects will be served from (path style, this will be treated as a prefix to URL)
 MediaServerDownload="https://minio.example.com/matterbridge"
 
@@ -32,6 +30,10 @@ MediaServerDownload="https://minio.example.com/matterbridge"
 S3Endpoint="https://minio.example.com:9000"
 S3AccessKey="minioadmin"
 S3SecretKey="minioadmin"
+# S3 bucket name
+S3Bucket = "matterbridge"
+# S3 region setting
+S3Region = "custom"
 # MinIO typically requires path style for bucket paths
 S3ForcePathStyle=true
 # To use presigned URLs instead of public buckets. Presigned URL will be valid for 7 days.

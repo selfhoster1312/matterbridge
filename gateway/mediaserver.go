@@ -68,9 +68,13 @@ var ErrMediaConfigurationNotWanted = errors.New("media server is not configured 
 var ErrMediaServerRuntime = errors.New("media server error")
 var errUploadFailed = fmt.Errorf("%w: upload failed", ErrMediaServerRuntime)
 
-func createS3MediaServer(bg *config.BridgeValues, bucketName string, uploadPrefix string, logger *logrus.Entry) (*s3MediaServer, error) {
-	if bucketName == "" {
-		return nil, fmt.Errorf("%w: invalid s3 upload prefix, must be in format s3://bucketname/prefix", ErrMediaConfiguration)
+func createS3MediaServer(bg *config.BridgeValues, uri *url.URL, logger *logrus.Entry) (*s3MediaServer, error) { //nolint: funlen
+	if bg.General.S3Bucket == "" {
+		return nil, fmt.Errorf("%w: s3 bucket is not configured", ErrMediaConfiguration)
+	}
+
+	if bg.General.S3Region == "" {
+		return nil, fmt.Errorf("%w: s3 region is not configured", ErrMediaConfiguration)
 	}
 
 	if bg.General.S3Endpoint == "" {
@@ -85,10 +89,8 @@ func createS3MediaServer(bg *config.BridgeValues, bucketName string, uploadPrefi
 		return nil, fmt.Errorf("%w: s3 secret key is not configured", ErrMediaConfiguration)
 	}
 
-	uploadPrefix = strings.Trim(uploadPrefix, "/")
-
 	client := s3.NewFromConfig(aws.Config{
-		Region:       "custom",
+		Region:       bg.General.S3Region,
 		Credentials:  credentials.NewStaticCredentialsProvider(bg.General.S3AccessKey, bg.General.S3SecretKey, ""),
 		Logger:       logging.Nop{},
 		BaseEndpoint: aws.String(bg.General.S3Endpoint),
@@ -103,13 +105,15 @@ func createS3MediaServer(bg *config.BridgeValues, bucketName string, uploadPrefi
 	}
 
 	// This will return an error if the bucket does not exist
-	headBucketResult, err := client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(bucketName)})
+	headBucketResult, err := client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(bg.General.S3Bucket)})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to check if bucket exists: %w", ErrMediaServerRuntime, err)
 	}
 
+	uploadPrefix := strings.Trim(uri.Path, "/")
+
 	logger.WithFields(logrus.Fields{
-		"bucket":           bucketName,
+		"bucket":           bg.General.S3Bucket,
 		"uploadPrefix":     uploadPrefix,
 		"baseUrl":          bg.General.S3Endpoint,
 		"pathStyle":        bg.General.S3ForcePathStyle,
@@ -124,15 +128,29 @@ func createS3MediaServer(bg *config.BridgeValues, bucketName string, uploadPrefi
 		s3Client:        client,
 		presignS3Client: presignClient,
 
-		bucket:             bucketName,
+		bucket:             bg.General.S3Bucket,
 		uploadPrefix:       uploadPrefix,
 		httpDownloadPrefix: bg.General.MediaServerDownload,
 	}, nil
 }
 
 func createMediaServer(bg *config.BridgeValues, logger *logrus.Entry) (mediaServer, error) {
-	if bg.General.MediaServerUpload == "" && bg.General.MediaDownloadPath == "" {
+	if bg.General.MediaServerUpload == "" && bg.General.MediaDownloadPath == "" && bg.General.S3Endpoint == "" {
 		return nil, ErrMediaConfigurationNotWanted //  we don't have a attachfield or we don't have a mediaserver configured return
+	}
+
+	if bg.General.S3Endpoint != "" {
+		parsed, err := url.Parse(bg.General.S3Endpoint)
+		if err != nil {
+			return nil, fmt.Errorf("%w: invalid S3 endpoint URL: %w", ErrMediaConfiguration, err)
+		}
+
+		s3MediaServer, err := createS3MediaServer(bg, parsed, logger.WithField("component", "s3mediaserver"))
+		if err == nil {
+			return s3MediaServer, nil
+		}
+
+		return nil, fmt.Errorf("%w: %w", ErrMediaConfiguration, err)
 	}
 
 	if bg.General.MediaServerUpload != "" {
@@ -150,15 +168,6 @@ func createMediaServer(bg *config.BridgeValues, logger *logrus.Entry) (mediaServ
 				httpUploadPath:     bg.General.MediaServerUpload,
 				httpDownloadPrefix: bg.General.MediaServerDownload,
 			}, nil
-		}
-
-		if parsed.Scheme == "s3" {
-			s3MediaServer, err := createS3MediaServer(bg, parsed.Host, parsed.Path, logger.WithField("component", "s3mediaserver"))
-			if err == nil {
-				return s3MediaServer, nil
-			}
-
-			return nil, fmt.Errorf("%w: %w", ErrMediaConfiguration, err)
 		}
 
 		return nil, fmt.Errorf("%w: unknown schema (protocol) for mediaServerUpload: '%s'", ErrMediaConfiguration, parsed.Scheme)
