@@ -50,9 +50,19 @@ type s3MediaServer struct {
 	s3Client        *s3.Client
 	presignS3Client *s3.PresignClient
 
+	cfg *s3Config
+}
+
+type s3Config struct {
+	endpoint  string
+	accessKey string
+	secretKey string
+
+	forcePathStyle     bool
 	bucket             string
 	uploadPrefix       string
 	httpDownloadPrefix string
+	region             string
 }
 
 var _ mediaServer = (*httpPutMediaServer)(nil)
@@ -68,7 +78,7 @@ var ErrMediaConfigurationNotWanted = errors.New("media server is not configured 
 var ErrMediaServerRuntime = errors.New("media server error")
 var errUploadFailed = fmt.Errorf("%w: upload failed", ErrMediaServerRuntime)
 
-func createS3MediaServer(bg *config.BridgeValues, uri *url.URL, logger *logrus.Entry) (*s3MediaServer, error) { //nolint: funlen
+func checkS3Config(bg *config.BridgeValues, uri *url.URL, logger *logrus.Entry) (*s3Config, error) {
 	if bg.General.S3Bucket == "" {
 		return nil, fmt.Errorf("%w: s3 bucket is not configured", ErrMediaConfiguration)
 	}
@@ -89,14 +99,37 @@ func createS3MediaServer(bg *config.BridgeValues, uri *url.URL, logger *logrus.E
 		return nil, fmt.Errorf("%w: s3 secret key is not configured", ErrMediaConfiguration)
 	}
 
+	if !bg.General.S3ForcePathStyle {
+		logger.Warn("S3ForcePathStyle is disabled. Most S3 servers require this setting to be enabled.")
+	}
+
+	return &s3Config{
+		endpoint:  bg.General.S3Endpoint,
+		accessKey: bg.General.S3AccessKey,
+		secretKey: bg.General.S3SecretKey,
+
+		forcePathStyle:     bg.General.S3ForcePathStyle,
+		bucket:             bg.General.S3Bucket,
+		uploadPrefix:       strings.Trim(uri.Path, "/"),
+		httpDownloadPrefix: bg.General.MediaServerDownload,
+		region:             bg.General.S3Region,
+	}, nil
+}
+
+func createS3MediaServer(bg *config.BridgeValues, uri *url.URL, logger *logrus.Entry) (*s3MediaServer, error) {
+	s3Cfg, err := checkS3Config(bg, uri, logger)
+	if err != nil {
+		return nil, err
+	}
+
 	client := s3.NewFromConfig(aws.Config{
-		Region:       bg.General.S3Region,
-		Credentials:  credentials.NewStaticCredentialsProvider(bg.General.S3AccessKey, bg.General.S3SecretKey, ""),
+		Region:       s3Cfg.region,
+		Credentials:  credentials.NewStaticCredentialsProvider(s3Cfg.accessKey, s3Cfg.secretKey, ""),
 		Logger:       logging.Nop{},
-		BaseEndpoint: aws.String(bg.General.S3Endpoint),
+		BaseEndpoint: aws.String(s3Cfg.endpoint),
 		HTTPClient:   &http.Client{Timeout: mediaUploadTimeout},
 	}, func(o *s3.Options) {
-		o.UsePathStyle = bg.General.S3ForcePathStyle
+		o.UsePathStyle = s3Cfg.forcePathStyle
 	})
 
 	var presignClient *s3.PresignClient
@@ -105,18 +138,16 @@ func createS3MediaServer(bg *config.BridgeValues, uri *url.URL, logger *logrus.E
 	}
 
 	// This will return an error if the bucket does not exist
-	headBucketResult, err := client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(bg.General.S3Bucket)})
+	headBucketResult, err := client.HeadBucket(context.TODO(), &s3.HeadBucketInput{Bucket: aws.String(s3Cfg.bucket)})
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to check if bucket exists: %w", ErrMediaServerRuntime, err)
 	}
 
-	uploadPrefix := strings.Trim(uri.Path, "/")
-
 	logger.WithFields(logrus.Fields{
-		"bucket":           bg.General.S3Bucket,
-		"uploadPrefix":     uploadPrefix,
-		"baseUrl":          bg.General.S3Endpoint,
-		"pathStyle":        bg.General.S3ForcePathStyle,
+		"bucket":           s3Cfg.bucket,
+		"uploadPrefix":     s3Cfg.uploadPrefix,
+		"baseUrl":          s3Cfg.endpoint,
+		"pathStyle":        s3Cfg.forcePathStyle,
 		"headBucketResult": headBucketResult,
 	}).Debug("checked destination bucket")
 
@@ -128,9 +159,7 @@ func createS3MediaServer(bg *config.BridgeValues, uri *url.URL, logger *logrus.E
 		s3Client:        client,
 		presignS3Client: presignClient,
 
-		bucket:             bg.General.S3Bucket,
-		uploadPrefix:       uploadPrefix,
-		httpDownloadPrefix: bg.General.MediaServerDownload,
+		cfg: s3Cfg,
 	}, nil
 }
 
@@ -245,13 +274,13 @@ func (h *localMediaServer) handleFilesUpload(fi *config.FileInfo) (string, error
 // Returns error on failure.
 func (h *s3MediaServer) handleFilesUpload(fi *config.FileInfo) (string, error) {
 	sha1sum := fmt.Sprintf("%x", sha1.Sum(*fi.Data))[:8] //nolint:gosec
-	key := path.Join(h.uploadPrefix, sha1sum, fi.Name)
+	key := path.Join(h.cfg.uploadPrefix, sha1sum, fi.Name)
 	objectSize := int64(len(*fi.Data)) // TODO: Using this, sine we got this in memory anyway. Would be nicer to use fi.Size, but it is 0
 
 	// We do not bother with multipart uploads for now, as files are expected to be small (less than 5GB).
 	// If needed, we can implement that later.
 	info, err := h.s3Client.PutObject(context.TODO(), &s3.PutObjectInput{
-		Bucket:        aws.String(h.bucket),
+		Bucket:        aws.String(h.cfg.bucket),
 		Key:           aws.String(key),
 		Body:          bytes.NewReader(*fi.Data),
 		ContentLength: aws.Int64(objectSize),
@@ -261,11 +290,11 @@ func (h *s3MediaServer) handleFilesUpload(fi *config.FileInfo) (string, error) {
 		return "", fmt.Errorf("%w: mediaserver s3 PutObject failed: %w", errUploadFailed, err)
 	}
 
-	downloadURL := h.httpDownloadPrefix + "/" + key
+	downloadURL := h.cfg.httpDownloadPrefix + "/" + key
 	// If presign is enabled, generate a presigned URL, otherwise use the standard download URL.
 	if h.presignS3Client != nil {
 		downloadReq, err := h.presignS3Client.PresignGetObject(context.TODO(), &s3.GetObjectInput{
-			Bucket: aws.String(h.bucket),
+			Bucket: aws.String(h.cfg.bucket),
 			Key:    aws.String(key),
 		}, s3.WithPresignExpires(mediaUploadPresignDuration))
 		if err != nil {
