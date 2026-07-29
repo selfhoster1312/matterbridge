@@ -212,8 +212,10 @@ func (b *Bvk) handleMessage(msg object.MessagesMessage, isFwd bool) {
 }
 
 func (b *Bvk) uploadFiles(extra map[string][]any, peerID int) (string, string) {
-	var attachments []string
-	var text strings.Builder
+	var (
+		attachments []string
+		text        strings.Builder
+	)
 
 	for _, f := range extra["file"] {
 		fi := f.(config.FileInfo)

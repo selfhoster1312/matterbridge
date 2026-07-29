@@ -149,6 +149,7 @@ func (b *API) handlePostMessage(c echo.Context) error {
 
 	for i, f := range message.Extra["file"] {
 		fi := config.FileInfo{}
+
 		if fm, ok = f.(map[string]any); !ok {
 			return echo.NewHTTPError(http.StatusInternalServerError, "invalid format for extra")
 		}

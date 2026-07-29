@@ -425,18 +425,24 @@ func (c *config) GetStringSlice2D(key string) ([][]string, bool) {
 	var result [][]string
 
 	c.RLock()
+
 	res, ok := c.v.Get(key).([]any)
 	if !ok {
 		c.RUnlock()
 
 		return nil, false
 	}
-	for _, entry := range res {
-		result2 := []string{}
-		for _, entry2 := range entry.([]any) {
-			result2 = append(result2, entry2.(string))
+
+	for idx, entry := range res {
+		entryarray, ok := entry.([]string)
+		if !ok {
+			c.logger.Errorf("GetStringSlice2D: key %s[%d] should be an array of strings", key, idx)
+			return nil, false
 		}
-		result = append(result, result2)
+
+		// TODO: This method should only accept 2-entries arrays in the inner arrays
+		// TODO: Add tests
+		result = append(result, entryarray)
 	}
 
 	c.RUnlock()

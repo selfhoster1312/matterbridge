@@ -155,7 +155,7 @@ func (b *Bwhatsapp) getNewReplyContext(parentID string) (*proto.ContextInfo, err
 	ctx := &proto.ContextInfo{
 		StanzaID:      &replyInfo.MessageID,
 		Participant:   &sender,
-		QuotedMessage: &proto.Message{Conversation: new("")},
+		QuotedMessage: &proto.Message{Conversation: new("")}, //nolint: staticcheck
 	}
 
 	return ctx, nil

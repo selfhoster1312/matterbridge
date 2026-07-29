@@ -197,6 +197,7 @@ func (b *Bmattermost) handleProps(rmsg *config.Message, message *matterclient.Me
 	if _, ok := props["override_username"].(string); ok {
 		rmsg.Username = props["override_username"].(string)
 	}
+
 	if _, ok := props["attachments"].([]any); ok {
 		rmsg.Extra["attachments"] = props["attachments"].([]any)
 		if rmsg.Text != "" {
