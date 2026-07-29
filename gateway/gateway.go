@@ -87,7 +87,6 @@ func (gw *Gateway) AddConfig(cfg *config.Gateway) error {
 		gw.logger.Errorf("mapChannels() failed: %s", err)
 	}
 	for _, br := range append(gw.MyConfig.In, append(gw.MyConfig.InOut, gw.MyConfig.Out...)...) {
-		br := br // scopelint
 		err := gw.AddBridge(&br)
 		if err != nil {
 			return err
@@ -437,7 +436,7 @@ func (gw *Gateway) ignoreMessage(msg *config.Message) bool {
 }
 
 // ignoreFilesComment returns true if we need to ignore a file with matched comment.
-func (gw *Gateway) ignoreFilesComment(extra map[string][]interface{}, igMessages []string) bool {
+func (gw *Gateway) ignoreFilesComment(extra map[string][]any, igMessages []string) bool {
 	if extra == nil {
 		return false
 	}

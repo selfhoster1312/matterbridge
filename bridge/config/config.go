@@ -49,7 +49,7 @@ type Message struct {
 	ParentID  string    `json:"parent_id"`
 	Timestamp time.Time `json:"timestamp"`
 	ID        string    `json:"id"`
-	Extra     map[string][]interface{}
+	Extra     map[string][]any
 }
 
 func (m Message) ParentNotFound() bool {
@@ -425,7 +425,7 @@ func (c *config) GetStringSlice2D(key string) ([][]string, bool) {
 	var result [][]string
 
 	c.RLock()
-	res, ok := c.v.Get(key).([]interface{})
+	res, ok := c.v.Get(key).([]any)
 	if !ok {
 		c.RUnlock()
 
@@ -433,7 +433,7 @@ func (c *config) GetStringSlice2D(key string) ([][]string, bool) {
 	}
 	for _, entry := range res {
 		result2 := []string{}
-		for _, entry2 := range entry.([]interface{}) {
+		for _, entry2 := range entry.([]any) {
 			result2 = append(result2, entry2.(string))
 		}
 		result = append(result, result2)
@@ -486,7 +486,7 @@ func GetIconURL(msg *Message, iconURL string) string {
 type TestConfig struct {
 	Config
 
-	Overrides map[string]interface{}
+	Overrides map[string]any
 }
 
 func (c *TestConfig) IsKeySet(key string) bool {
