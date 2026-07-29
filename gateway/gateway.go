@@ -10,7 +10,7 @@ import (
 
 	"github.com/d5/tengo/v2"
 	"github.com/d5/tengo/v2/stdlib"
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/kyokomi/emoji/v2"
 	"github.com/matterbridge-org/matterbridge/bridge"
 	"github.com/matterbridge-org/matterbridge/bridge/config"
@@ -29,7 +29,7 @@ type Gateway struct {
 	ChannelOptions map[string]config.ChannelOptions
 	Message        chan config.Message
 	Name           string
-	Messages       *lru.Cache
+	Messages       *lru.Cache[string, []*BrMsgID]
 
 	logger *logrus.Entry
 }
@@ -105,18 +105,10 @@ func (gw *Gateway) FindCanonicalMsgID(protocol string, mID string) string {
 
 	// If not keyed, iterate through cache for downstream, and infer upstream.
 	for _, mid := range gw.Messages.Keys() {
-		v, _ := gw.Messages.Peek(mid)
-		ids, ok := v.([]*BrMsgID)
-		if !ok { // type assertion failed
-			gw.logger.Errorf("v.([]*BrMsgID) type assertion failed")
-		}
+		ids, _ := gw.Messages.Peek(mid)
 		for _, downstreamMsgObj := range ids {
 			if ID == downstreamMsgObj.ID {
-				midstring, ok := mid.(string)
-				if !ok { // type assertion failed
-					gw.logger.Errorf("mid.(string) type assertion failed")
-				}
-				return midstring
+				return mid
 			}
 		}
 	}
@@ -128,7 +120,7 @@ func (gw *Gateway) FindCanonicalMsgID(protocol string, mID string) string {
 func New(rootLogger *logrus.Logger, cfg *config.Gateway, r *Router) *Gateway {
 	logger := rootLogger.WithFields(logrus.Fields{"prefix": "gateway"})
 
-	cache, _ := lru.New(5000)
+	cache, _ := lru.New[string, []*BrMsgID](5000)
 	gw := &Gateway{
 		Channels: make(map[string]*config.ChannelInfo),
 		Message:  r.Message,
@@ -389,8 +381,7 @@ func (gw *Gateway) getDestChannel(msg *config.Message, dest bridge.Bridge) []con
 }
 
 func (gw *Gateway) getDestMsgID(msgID string, dest *bridge.Bridge, channel *config.ChannelInfo) string {
-	if res, ok := gw.Messages.Get(msgID); ok {
-		IDs := res.([]*BrMsgID)
+	if IDs, ok := gw.Messages.Get(msgID); ok {
 		for _, id := range IDs {
 			// check protocol, bridge name and channelname
 			// for people that reuse the same bridge multiple times. see #342
